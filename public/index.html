@@ -440,7 +440,7 @@ footer{text-align:center;padding:24px;border-top:1px solid var(--gb);color:var(-
 
 <script>
 // No secrets here — all API calls go through /api/submit on the server
-const PROJECT_TABLES={'SPN004':'test','SPN062':'spn001','SBN003':'spn015','SPN003':'Spn003'};
+const PROJECT_TABLES={'SPN004':'test','SPN062':'spn001','SBN003':'spn015','SPN003':'Spn003','NG008':'NG008'};
 const CLOUDINARY_CLOUD='dfex176he';
 const CLOUDINARY_PRESET='umwnwbli';
 document.getElementById('dt').valueAsDate=new Date();
@@ -485,7 +485,7 @@ function onProjChange(){
     'SPN003':'background:#fdecea;color:#7a0a0a;border:1px solid #ef9a9a'
   };
   // Show/hide correct form fields
-  const isSpn003 = proj==='SPN003';
+  const isSpn003 = proj==='SPN003' || proj==='NG008';
   document.getElementById('fields-standard').style.display = isSpn003 ? 'none' : 'contents';
   document.getElementById('fields-spn003').style.display   = isSpn003 ? 'contents' : 'none';
 
