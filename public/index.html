@@ -555,7 +555,7 @@ async function submit(){
     let fields={};
     let spn003Row=null;
 
-   if(proj==='SPN003' || proj==='NG008'){
+  if (proj === 'SPN003' || proj === 'NG008' || proj === 'NG014') {
       const buid=document.getElementById('s3-buid').value.trim();
       const iid=document.getElementById('s3-iid').value.trim();
       const wt=document.getElementById('s3-wt').value;
