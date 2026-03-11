@@ -206,6 +206,7 @@ footer{text-align:center;padding:24px;border-top:1px solid var(--gb);color:var(-
               <div class="sw"><select id="proj" onchange="onProjChange()"><option value="" disabled selected>Select project number…</option><option value="SPN004">SPN004</option><option value="SPN062">SPN062</option><option value="SPN003">SPN003</option>
 <option value="NG008">NG008</option>
 <option value="NG014">NG014</option>
+<option value="SBN025">SBN025</option>
 </select></div>
               <div id="proj-badge" style="display:none;margin-top:8px;padding:9px 14px;border-radius:6px;font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;align-items:center;gap:8px;"></div>
             </div>
@@ -444,12 +445,14 @@ footer{text-align:center;padding:24px;border-top:1px solid var(--gb);color:var(-
 <script>
 // No secrets here — all API calls go through /api/submit on the server
 const PROJECT_TABLES = {
+ const PROJECT_TABLES = {
   'SPN004':'test',
   'SPN062':'spn001',
   'SBN003':'spn015',
   'SPN003':'Spn003',
   'NG008':'NG008',
-  'NG014':'NG014'
+  'SBN025':'SBN025'
+};
 };
 const CLOUDINARY_CLOUD='dfex176he';
 const CLOUDINARY_PRESET='umwnwbli';
@@ -495,7 +498,7 @@ function onProjChange(){
     'SPN003':'background:#fdecea;color:#7a0a0a;border:1px solid #ef9a9a'
   };
   // Show/hide correct form fields
-  const isSpn003 = proj === 'SPN003' || proj === 'NG008' || proj === 'NG014';
+ const isSpn003 = proj === 'SPN003' || proj === 'NG008' || proj === 'NG014' || proj === 'SBN025';
   document.getElementById('fields-standard').style.display = isSpn003 ? 'none' : 'contents';
   document.getElementById('fields-spn003').style.display   = isSpn003 ? 'contents' : 'none';
 
