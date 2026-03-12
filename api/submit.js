@@ -6,9 +6,10 @@ const PROJECT_TABLES = {
   SPN062: 'spn001',
   SBN003: 'spn015',
 SPN003: "Spn003",
-NG008: "NG008",
-NG014: "NG014",
-SBN025: "SBN025"
+ NG008: "NG008",
+  NG014: "NG014",
+  SBN025: "SBN025",
+  SBN005: "SBN005"
 };
 
 module.exports = async function handler(req, res) {
