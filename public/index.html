@@ -205,9 +205,9 @@ footer{text-align:center;padding:24px;border-top:1px solid var(--gb);color:var(-
                   <option value="SPN003">SPN003</option>
                   <option value="NG008">NG008</option>
                   <option value="NG014">NG014</option>
-                 <option value="SBN025">SBN025</option>
-<option value="SBN005">SBN005</option>
-<option value="SBN002">SBN002</option>
+                  <option value="SBN025">SBN025</option>
+                  <option value="SBN005">SBN005</option>
+                  <option value="SBN002">SBN002</option>
                 </select>
               </div>
               <div id="proj-badge" style="display:none;margin-top:8px;padding:9px 14px;border-radius:6px;font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;"></div>
@@ -337,14 +337,12 @@ footer{text-align:center;padding:24px;border-top:1px solid var(--gb);color:var(-
 <div id="toast"></div>
 
 <script>
-const PROJECT_TABLES={'SPN004':'test','SPN062':'spn001','SPN003':'Spn003','NG008':'NG008','NG014':'NG014','SBN025': 'SBN025',
-'SBN005': 'SBN005',
-'SBN002': 'SBN002'
-};
+const PROJECT_TABLES={'SPN004':'test','SPN062':'spn001','SPN003':'Spn003','NG008':'NG008','NG014':'NG014','SBN025':'SBN025','SBN005':'SBN005','SBN002':'SBN002'};
 const CLOUDINARY_CLOUD='dfex176he';
 const CLOUDINARY_PRESET='umwnwbli';
 // Projects that use the SPN003-style form
 const SPN003_PROJECTS=['SPN003','NG008','NG014','SBN025','SBN005','SBN002'];
+
 document.getElementById('dt').valueAsDate=new Date();
 const rows=[];
 
@@ -385,7 +383,9 @@ function onProjChange(){
     'SPN003':'background:#fdecea;color:#7a0a0a;border:1px solid #ef9a9a',
     'NG008':'background:#fdecea;color:#7a0a0a;border:1px solid #ef9a9a',
     'NG014':'background:#fdecea;color:#7a0a0a;border:1px solid #ef9a9a',
-    'SBN025':'background:#fff8e1;color:#7a5500;border:1px solid #ffe082'
+    'SBN025':'background:#fff8e1;color:#7a5500;border:1px solid #ffe082',
+    'SBN005':'background:#fff8e1;color:#7a5500;border:1px solid #ffe082',
+    'SBN002':'background:#fff8e1;color:#7a5500;border:1px solid #ffe082'
   };
   const isSpn003Type = SPN003_PROJECTS.includes(proj);
   document.getElementById('fields-standard').style.display = isSpn003Type ? 'none' : 'block';
@@ -427,26 +427,21 @@ function clearImg(){
   document.getElementById('img-drop').style.display='block';
 }
 async function uploadToCloudinary(file){
-  return new Promise(function(resolve, reject){
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', CLOUDINARY_PRESET);
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload');
-    xhr.timeout = 30000;
-    xhr.onload = function(){
-      if(xhr.status === 200){
-        const data = JSON.parse(xhr.responseText);
-        resolve(data.secure_url);
-      } else {
-        reject(new Error('Image upload failed: ' + xhr.status));
-      }
+  return new Promise(function(resolve,reject){
+    const formData=new FormData();
+    formData.append('file',file);
+    formData.append('upload_preset',CLOUDINARY_PRESET);
+    const xhr=new XMLHttpRequest();
+    xhr.open('POST','https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD+'/image/upload');
+    xhr.timeout=30000;
+    xhr.onload=function(){
+      if(xhr.status===200){const data=JSON.parse(xhr.responseText);resolve(data.secure_url);}
+      else{reject(new Error('Image upload failed: '+xhr.status));}
     };
-    xhr.onerror = function(){ reject(new Error('Image upload network error — check your connection')); };
-    xhr.ontimeout = function(){ reject(new Error('Image upload timed out — try a smaller image')); };
+    xhr.onerror=function(){reject(new Error('Image upload network error — check your connection'));};
+    xhr.ontimeout=function(){reject(new Error('Image upload timed out — try a smaller image'));};
     xhr.send(formData);
   });
-}
 }
 
 async function submit(){
