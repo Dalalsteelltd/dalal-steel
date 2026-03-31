@@ -10,7 +10,8 @@ SPN003: "Spn003",
   NG014: "NG014",
   SBN025: "SBN025",
 SBN005: "SBN005",
-SBN002: "SBN002"
+SBN002: "SBN002",
+SBN022: "SBN022",
 };
 
 module.exports = async function handler(req, res) {
