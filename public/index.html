@@ -427,13 +427,26 @@ function clearImg(){
   document.getElementById('img-drop').style.display='block';
 }
 async function uploadToCloudinary(file){
-  const formData=new FormData();
-  formData.append('file',file);
-  formData.append('upload_preset',CLOUDINARY_PRESET);
-  const res=await fetch('https://api.cloudinary.com/v1_1/'+CLOUDINARY_CLOUD+'/image/upload',{method:'POST',body:formData});
-  if(!res.ok) throw new Error('Image upload failed');
-  const data=await res.json();
-  return data.secure_url;
+  return new Promise(function(resolve, reject){
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_PRESET);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload');
+    xhr.timeout = 30000;
+    xhr.onload = function(){
+      if(xhr.status === 200){
+        const data = JSON.parse(xhr.responseText);
+        resolve(data.secure_url);
+      } else {
+        reject(new Error('Image upload failed: ' + xhr.status));
+      }
+    };
+    xhr.onerror = function(){ reject(new Error('Image upload network error — check your connection')); };
+    xhr.ontimeout = function(){ reject(new Error('Image upload timed out — try a smaller image')); };
+    xhr.send(formData);
+  });
+}
 }
 
 async function submit(){
