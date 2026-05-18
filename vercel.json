@@ -1,7 +1,6 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/home.html" },
-    { "source": "/qc", "destination": "/index.html" },
+    { "source": "/qc", "destination": "/qc.html" },
     { "source": "/loading", "destination": "/loading.html" },
     { "source": "/painting", "destination": "/painting.html" },
     { "source": "/welding", "destination": "/welding.html" },
