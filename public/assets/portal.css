@@ -278,7 +278,22 @@ table.dsi-tbl td.muted{color:var(--muted);font-size:.78rem}
    Applied broadly so all pages feel coherent.
    ─────────────────────────────────────────────────────────────────────────── */
 
-/* Ambient gradient backdrop behind everything */
+/* Site-wide background photo — heavily blurred + darkened so it reads as
+   atmosphere, not foreground. Sits behind everything else. */
+html::before{
+  content:'';position:fixed;inset:-40px;z-index:-3;pointer-events:none;
+  background:url('/assets/site-bg.jpg') center/cover no-repeat;
+  filter:blur(14px) brightness(.36) saturate(.85) contrast(1.05);
+}
+/* Soft vignette + cool tint layer above the photo */
+html::after{
+  content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(7,10,16,0) 0%, rgba(7,10,16,.55) 60%, rgba(7,10,16,.92) 100%),
+    linear-gradient(180deg, rgba(13,17,23,.55), rgba(7,10,16,.78));
+}
+
+/* Ambient gradient backdrop above the photo, below the content */
 body::before{
   content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
   background:
@@ -287,6 +302,10 @@ body::before{
     radial-gradient(40% 40% at 50% 50%, rgba(61,213,152,.05), transparent 65%);
   filter:blur(40px);
 }
+
+/* Keep html's solid dark bg as a fallback in case the photo fails to load;
+   make body transparent so the html::before photo layer shows through. */
+body{background:transparent}
 
 /* Header: deeper glass */
 .dsi-header{
