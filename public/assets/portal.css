@@ -272,3 +272,109 @@ table.dsi-tbl td.muted{color:var(--muted);font-size:.78rem}
   .dsi-filterbar{grid-template-columns:1fr 1fr}
   .dsi-dash-summary{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Glass polish — subtle translucent surfaces, hairline highlights, soft glow.
+   Applied broadly so all pages feel coherent.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Ambient gradient backdrop behind everything */
+body::before{
+  content:'';position:fixed;inset:-15%;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(55% 50% at 12% 8%, rgba(88,166,255,.10), transparent 60%),
+    radial-gradient(50% 45% at 92% 88%, rgba(163,130,255,.12), transparent 60%),
+    radial-gradient(40% 40% at 50% 50%, rgba(61,213,152,.05), transparent 65%);
+  filter:blur(40px);
+}
+
+/* Header: deeper glass */
+.dsi-header{
+  background:linear-gradient(135deg, rgba(13,17,23,.78), rgba(22,27,34,.72));
+  border-bottom:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(14px) saturate(140%);
+  -webkit-backdrop-filter:blur(14px) saturate(140%);
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 10px 32px rgba(0,0,0,.30);
+}
+
+/* Cards: translucent surface, inner highlight, soft drop shadow */
+.dsi-card,
+.dsi-stat,
+.dsi-dash-card,
+.dsi-filterbar{
+  background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015)), rgba(22,27,34,.65);
+  border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(10px) saturate(135%);
+  -webkit-backdrop-filter:blur(10px) saturate(135%);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.05) inset,
+    0 14px 36px rgba(0,0,0,.32);
+  position:relative;
+}
+
+/* Subtle top hairline that catches the eye on each card */
+.dsi-card::before,
+.dsi-stat::before,
+.dsi-dash-card::before{
+  content:'';position:absolute;left:14px;right:14px;top:0;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  pointer-events:none;
+}
+
+.dsi-card:hover,
+.dsi-stat:hover,
+.dsi-dash-card:hover{
+  border-color:rgba(255,255,255,.16);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.07) inset,
+    0 18px 44px rgba(0,0,0,.38);
+}
+
+/* Stat icons glow softly */
+.dsi-stat-icon{box-shadow:0 0 0 1px rgba(255,255,255,.06) inset, 0 6px 18px rgba(0,0,0,.30)}
+.dsi-stat-icon.b{box-shadow:0 0 0 1px rgba(88,166,255,.18) inset, 0 6px 22px rgba(88,166,255,.18)}
+.dsi-stat-icon.g{box-shadow:0 0 0 1px rgba(63,185,80,.20) inset, 0 6px 22px rgba(63,185,80,.18)}
+.dsi-stat-icon.r{box-shadow:0 0 0 1px rgba(248,81,73,.22) inset, 0 6px 22px rgba(248,81,73,.20)}
+.dsi-stat-icon.y{box-shadow:0 0 0 1px rgba(227,155,55,.22) inset, 0 6px 22px rgba(227,155,55,.20)}
+.dsi-stat-icon.v{box-shadow:0 0 0 1px rgba(163,130,255,.22) inset, 0 6px 22px rgba(163,130,255,.22)}
+
+/* Hero: light glass overlay so the accent gradient still reads */
+.dsi-hero{
+  background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+
+/* Form fields: glassier inputs with smoother focus halo */
+.dsi-field input,
+.dsi-field select,
+.dsi-field textarea{
+  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.08);
+  transition:border-color .18s, box-shadow .18s, background .18s;
+}
+.dsi-field input:hover,
+.dsi-field select:hover,
+.dsi-field textarea:hover{background:rgba(255,255,255,.05)}
+.dsi-field input:focus,
+.dsi-field select:focus,
+.dsi-field textarea:focus{background:rgba(255,255,255,.06)}
+
+/* Buttons: tighten the glow already there */
+.dsi-submit{
+  box-shadow:0 1px 0 rgba(255,255,255,.18) inset, 0 10px 26px rgba(0,0,0,.35);
+  transition:transform .12s, box-shadow .18s, opacity .18s;
+}
+.dsi-submit:hover{transform:translateY(-1px)}
+
+/* Department cards on the landing: lift on hover */
+.dsi-dept{transition:transform .18s, border-color .18s, box-shadow .18s}
+.dsi-dept:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,.40)}
+
+/* Footer breathes a hair lighter */
+.dsi-footer{background:linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0))}
+
+/* Reduce-motion respect */
+@media (prefers-reduced-motion: reduce){
+  *{transition-duration:.01ms !important; animation-duration:.01ms !important; animation-iteration-count:1 !important}
+}

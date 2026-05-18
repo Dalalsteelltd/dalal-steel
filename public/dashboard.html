@@ -17,6 +17,7 @@
   <div class="dsi-header-right">
     <span class="dsi-badge">📊 Overview</span>
     <a href="/" class="dsi-back">← Home</a>
+    <button class="dsi-back" id="dsi-signout" type="button" style="cursor:pointer">Sign out</button>
   </div>
 </header>
 
@@ -117,6 +118,15 @@
 <div id="dsi-toast" class="dsi-toast"></div>
 
 <script src="/assets/portal.js"></script>
+<script>
+(function(){
+  const so = document.getElementById('dsi-signout');
+  if (so) so.addEventListener('click', async () => {
+    try { await fetch('/api/dashboard-logout', { method: 'POST' }); } catch {}
+    window.location.replace('/dashboard/login');
+  });
+})();
+</script>
 <script>
 (function(){
   let projects = [];

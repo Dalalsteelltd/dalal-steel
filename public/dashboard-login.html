@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Manager Sign-in — Dalal Steel Industries</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Barlow',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    color:#e6edf3;
+    background:#070a10;
+    overflow:hidden;
+    position:relative;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* Ambient gradient field */
+  body::before{
+    content:'';position:fixed;inset:-20%;
+    background:
+      radial-gradient(60% 50% at 18% 22%, rgba(163,130,255,.32), transparent 60%),
+      radial-gradient(50% 45% at 85% 75%, rgba(88,166,255,.22), transparent 60%),
+      radial-gradient(40% 40% at 55% 50%, rgba(61,213,152,.10), transparent 60%);
+    filter:blur(40px);
+    animation:drift 22s ease-in-out infinite alternate;
+    z-index:0;
+  }
+  body::after{
+    content:'';position:fixed;inset:0;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 80px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 80px);
+    z-index:0;pointer-events:none;
+  }
+  @keyframes drift{
+    from{transform:translate(0,0) scale(1)}
+    to{transform:translate(-2%,2%) scale(1.06)}
+  }
+
+  .login-wrap{
+    position:relative;z-index:1;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+
+  .login-card{
+    width:100%;max-width:440px;
+    background:linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.02));
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:16px;
+    padding:36px 32px 32px;
+    backdrop-filter:blur(20px) saturate(140%);
+    -webkit-backdrop-filter:blur(20px) saturate(140%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,.08) inset,
+      0 30px 80px rgba(0,0,0,.55),
+      0 0 0 1px rgba(163,130,255,.06);
+    position:relative;
+    overflow:hidden;
+  }
+  .login-card::before{
+    content:'';position:absolute;left:0;right:0;top:0;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(163,130,255,.65),transparent);
+  }
+
+  .login-brand{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .login-logo{
+    width:46px;height:46px;border-radius:10px;
+    background:linear-gradient(180deg,#fff,#dfe7f0);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    box-shadow:0 6px 20px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.18) inset;
+  }
+  .login-logo img{width:38px;height:38px;object-fit:contain}
+  .login-brand h1{
+    font-family:'Barlow Condensed',sans-serif;font-size:1.05rem;font-weight:800;
+    letter-spacing:.10em;text-transform:uppercase;color:#fff;line-height:1;
+  }
+  .login-brand span{
+    font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:#9aa4b2;
+    font-weight:500;
+  }
+
+  .login-title{
+    font-family:'Barlow Condensed',sans-serif;font-size:1.9rem;font-weight:800;
+    letter-spacing:.04em;text-transform:uppercase;color:#fff;line-height:1.1;margin-bottom:6px;
+  }
+  .login-title em{font-style:normal;color:#a382ff}
+  .login-sub{font-size:.86rem;color:#9aa4b2;margin-bottom:26px;line-height:1.5}
+
+  .login-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .login-field label{
+    font-family:'Barlow Condensed',sans-serif;font-size:.7rem;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:#9aa4b2;
+  }
+  .login-field input{
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:8px;
+    color:#e6edf3;font-family:'Barlow',sans-serif;font-size:.95rem;
+    padding:12px 14px;outline:none;width:100%;
+    transition:border-color .18s, box-shadow .18s, background .18s;
+  }
+  .login-field input::placeholder{color:#5b6470}
+  .login-field input:focus{
+    border-color:rgba(163,130,255,.55);
+    background:rgba(255,255,255,.06);
+    box-shadow:0 0 0 4px rgba(163,130,255,.14);
+  }
+
+  .login-submit{
+    margin-top:10px;width:100%;
+    background:linear-gradient(135deg,#7a5cf0,#a382ff);
+    border:none;color:#fff;font-family:'Barlow Condensed',sans-serif;
+    font-size:.95rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    padding:13px 18px;border-radius:8px;cursor:pointer;
+    box-shadow:0 8px 22px rgba(122,92,240,.35), 0 1px 0 rgba(255,255,255,.18) inset;
+    transition:transform .12s, box-shadow .18s, opacity .18s;
+  }
+  .login-submit:hover{transform:translateY(-1px);box-shadow:0 12px 28px rgba(122,92,240,.45), 0 1px 0 rgba(255,255,255,.22) inset}
+  .login-submit:active{transform:translateY(0)}
+  .login-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+
+  .login-error{
+    margin-top:14px;display:none;
+    background:rgba(248,81,73,.08);
+    border:1px solid rgba(248,81,73,.30);
+    color:#ffb4b0;border-radius:8px;padding:10px 12px;
+    font-size:.82rem;
+  }
+  .login-error.show{display:block}
+
+  .login-foot{
+    margin-top:22px;padding-top:18px;
+    border-top:1px solid rgba(255,255,255,.06);
+    display:flex;justify-content:space-between;align-items:center;
+    font-size:.7rem;color:#6b7280;letter-spacing:.06em;
+  }
+  .login-foot a{color:#9aa4b2;text-decoration:none}
+  .login-foot a:hover{color:#e6edf3}
+
+  @media (max-width:480px){
+    .login-card{padding:28px 22px 24px;border-radius:14px}
+    .login-title{font-size:1.55rem}
+  }
+</style>
+</head>
+<body>
+
+<div class="login-wrap">
+  <form class="login-card" id="loginForm" autocomplete="off">
+
+    <div class="login-brand">
+      <div class="login-logo">
+        <img src="https://cdn.prod.website-files.com/642d748a11520d3a83eb2715/646a10def01604a84f90b302_Asset%201.svg" alt="DSI" onerror="this.style.display='none'"/>
+      </div>
+      <div>
+        <h1>Dalal Steel Industries</h1>
+        <span>Manager Access</span>
+      </div>
+    </div>
+
+    <div class="login-title">Sign <em>in</em></div>
+    <div class="login-sub">Manager dashboard is restricted. Enter your operations credentials to continue.</div>
+
+    <div class="login-field">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" required autofocus />
+    </div>
+
+    <div class="login-field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required />
+    </div>
+
+    <button class="login-submit" type="submit" id="loginBtn">Enter Dashboard →</button>
+    <div class="login-error" id="loginError"></div>
+
+    <div class="login-foot">
+      <span>ISO 9001:2015 · AWS D1.1 · EN 1090-2</span>
+      <a href="/">← Back home</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  const form = document.getElementById('loginForm');
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+
+  function showError(msg){
+    err.textContent = msg;
+    err.classList.add('show');
+  }
+  function clearError(){
+    err.classList.remove('show');
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearError();
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Signing in…';
+
+    try {
+      const res = await fetch('/api/dashboard-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value,
+        }),
+      });
+      if (res.ok) {
+        window.location.replace('/dashboard');
+        return;
+      }
+      let msg = 'Sign-in failed.';
+      try {
+        const data = await res.json();
+        if (data && data.error) msg = data.error;
+      } catch {}
+      showError(msg);
+    } catch (e) {
+      showError('Network error. Please try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

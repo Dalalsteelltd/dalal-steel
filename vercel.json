@@ -4,6 +4,7 @@
     { "source": "/loading", "destination": "/loading.html" },
     { "source": "/painting", "destination": "/painting.html" },
     { "source": "/welding", "destination": "/welding.html" },
-    { "source": "/dashboard", "destination": "/dashboard.html" }
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/dashboard/login", "destination": "/dashboard-login.html" }
   ]
 }
