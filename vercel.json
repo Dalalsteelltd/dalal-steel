@@ -1,14 +1,11 @@
 {
+  "cleanUrls": true,
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/", "destination": "/public/home.html" },
-    { "source": "/qc", "destination": "/public/index.html" },
-    { "source": "/loading", "destination": "/public/loading.html" },
-    { "source": "/painting", "destination": "/public/painting.html" },
-    { "source": "/welding", "destination": "/public/welding.html" },
-    { "source": "/dashboard", "destination": "/public/dashboard.html" },
-    { "source": "/projects.json", "destination": "/public/projects.json" },
-    { "source": "/assets/(.*)", "destination": "/public/assets/$1" },
-    { "source": "/(.*)", "destination": "/public/$1" }
+    { "source": "/", "destination": "/home.html" },
+    { "source": "/qc", "destination": "/index.html" },
+    { "source": "/loading", "destination": "/loading.html" },
+    { "source": "/painting", "destination": "/painting.html" },
+    { "source": "/welding", "destination": "/welding.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" }
   ]
 }
