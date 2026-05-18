@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Robotic Welding — Dalal Steel Industries</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/portal.css"/>
+</head>
+<body class="accent-red">
+
+<header class="dsi-header">
+  <div class="dsi-brand">
+    <div class="dsi-logo"><img src="https://cdn.prod.website-files.com/642d748a11520d3a83eb2715/646a10def01604a84f90b302_Asset%201.svg" alt="DSI" onerror="this.style.display='none'"/></div>
+    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Robotic Welding</span></div>
+  </div>
+  <div class="dsi-header-right">
+    <span class="dsi-badge">🤖 Welding</span>
+    <a href="/" class="dsi-back">← Home</a>
+  </div>
+</header>
+
+<section class="dsi-hero accent-red">
+  <div class="dsi-hero-inner">
+    <div>
+      <h2>Robotic <em>Welding</em> Log</h2>
+      <p>Capture weld parameters, joint configuration and AWS D1.1 quality outcomes per beam.</p>
+    </div>
+  </div>
+</section>
+
+<main class="dsi-main accent-red">
+
+  <div class="dsi-stats">
+    <div class="dsi-stat"><div class="dsi-stat-icon b">🔥</div><div><div class="dsi-stat-value" id="stTotal">0</div><div class="dsi-stat-label">Total Welded</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon g">✅</div><div><div class="dsi-stat-value" id="stAcc">0</div><div class="dsi-stat-label">Accepted</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon r">❌</div><div><div class="dsi-stat-value" id="stRej">0</div><div class="dsi-stat-label">Rejected</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon y">🔧</div><div><div class="dsi-stat-value" id="stRew">0</div><div class="dsi-stat-label">Reworked</div></div></div>
+  </div>
+
+  <div class="dsi-layout">
+
+    <div class="dsi-card">
+      <div class="dsi-card-head">
+        <div class="dsi-card-head-icon">📝</div>
+        <div><h3>New Weld Record</h3><p>Fields marked * are required</p></div>
+      </div>
+      <div class="dsi-card-body">
+
+        <div class="dsi-grid">
+          <div class="dsi-field full">
+            <label>Project Number <span class="req">*</span></label>
+            <select id="f-proj"></select>
+            <div class="dsi-pbadge" id="f-pbadge">✓ Project selected — ready to submit</div>
+          </div>
+
+          <div class="dsi-divider"><span>Job Identification</span></div>
+          <div class="dsi-field"><label>Weld Job ID <span class="req">*</span></label><input type="text" id="f-id" placeholder="e.g. WJ-001"/></div>
+          <div class="dsi-field"><label>Beam / Member UID <span class="req">*</span></label><input type="text" id="f-uid" placeholder="e.g. BM-4412-A"/></div>
+
+          <div class="dsi-divider"><span>Cell &amp; Joint</span></div>
+          <div class="dsi-field">
+            <label>Robot Cell / Station <span class="req">*</span></label>
+            <select id="f-cell">
+              <option value="" disabled selected>Select cell…</option>
+              <option>Cell 1</option><option>Cell 2</option><option>Cell 3</option><option>Cell 4</option>
+            </select>
+          </div>
+          <div class="dsi-field">
+            <label>Weld Type <span class="req">*</span></label>
+            <select id="f-wtype">
+              <option value="" disabled selected>Select weld type…</option>
+              <option>Fillet</option><option>Butt</option><option>Groove</option><option>Plug</option><option>Slot</option>
+            </select>
+          </div>
+          <div class="dsi-field">
+            <label>Joint Configuration <span class="req">*</span></label>
+            <select id="f-joint">
+              <option value="" disabled selected>Select joint…</option>
+              <option>T-Joint</option><option>Lap Joint</option><option>Corner Joint</option><option>Butt Joint</option><option>Edge Joint</option>
+            </select>
+          </div>
+          <div class="dsi-field"><label>Wire / Consumable <span class="req">*</span></label><input type="text" id="f-wire" placeholder="e.g. ER70S-6 1.2mm"/></div>
+          <div class="dsi-field"><label>Gas Mix <span class="req">*</span></label><input type="text" id="f-gas" placeholder="e.g. 80/20 Ar/CO2"/></div>
+
+          <div class="dsi-divider"><span>Weld Parameters</span></div>
+          <div class="dsi-field"><label>Amperage (A) <span class="req">*</span></label><input type="number" id="f-amp" min="0" step="1" placeholder="e.g. 220"/></div>
+          <div class="dsi-field"><label>Voltage (V) <span class="req">*</span></label><input type="number" id="f-volt" min="0" step="0.1" placeholder="e.g. 26.5"/></div>
+          <div class="dsi-field"><label>Travel Speed (mm/min) <span class="req">*</span></label><input type="number" id="f-speed" min="0" step="1" placeholder="e.g. 350"/></div>
+          <div class="dsi-field"><label>Wire Feed Speed (m/min) <span class="req">*</span></label><input type="number" id="f-feed" min="0" step="0.1" placeholder="e.g. 8.5"/></div>
+          <div class="dsi-field"><label>Weld Length (mm) <span class="req">*</span></label><input type="number" id="f-len" min="0" step="1" placeholder="e.g. 800"/></div>
+          <div class="dsi-field"><label>Number of Passes <span class="req">*</span></label><input type="number" id="f-pass" min="1" step="1" placeholder="e.g. 2"/></div>
+
+          <div class="dsi-divider"><span>Quality &amp; Inspection</span></div>
+          <div class="dsi-field">
+            <label>Weld Quality Grade <span class="req">*</span></label>
+            <select id="f-grade">
+              <option value="" disabled selected>Select grade…</option>
+              <option>A (Excellent)</option><option>B (Good)</option><option>C (Fair)</option><option>D (Reject)</option>
+            </select>
+          </div>
+          <div class="dsi-field">
+            <label>Inspection Result <span class="req">*</span></label>
+            <select id="f-result">
+              <option value="" disabled selected>Select result…</option>
+              <option>Accepted</option><option>Rejected</option><option>Reworked</option>
+            </select>
+          </div>
+          <div class="dsi-field"><label>Operator Name <span class="req">*</span></label><input type="text" id="f-by" placeholder="Operator name"/></div>
+          <div class="dsi-field"><label>Date <span class="req">*</span></label><input type="date" id="f-date"/></div>
+
+          <div class="dsi-field full"><label>Notes / Remarks</label><textarea id="f-notes" placeholder="Preheat temp, shielding observations, defects, etc."></textarea></div>
+
+          <div class="dsi-field full">
+            <label>Image Attachment</label>
+            <div id="img-drop" class="dsi-drop">
+              <div class="di">📎</div>
+              <div class="dh">Click or drag image here</div>
+              <div class="ds">JPG, PNG, WEBP — max 5MB</div>
+            </div>
+            <input type="file" id="img-input" accept="image/*" style="display:none"/>
+            <div id="img-preview" class="dsi-preview">
+              <img id="img-thumb"/>
+              <button type="button">✕</button>
+              <div class="dn" id="img-name"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dsi-card-foot">
+        <span class="dsi-req-note">* Required fields</span>
+        <button class="dsi-submit" id="submitBtn"><div class="dsi-spinner"></div><span>Submit Record</span></button>
+      </div>
+    </div>
+
+    <div class="dsi-side">
+      <div class="dsi-info">
+        <h4>🏅 AWS D1.1 Acceptance</h4>
+        <ul>
+          <li><strong style="color:#3fb950">A</strong>&nbsp;— Full acceptance, no defects detected</li>
+          <li><strong style="color:#3fb950">B</strong>&nbsp;— Minor surface imperfections only</li>
+          <li><strong style="color:#e39b37">C</strong>&nbsp;— Minor subsurface flaws within limits</li>
+          <li><strong style="color:#f85149">D</strong>&nbsp;— Exceeds allowable defect limits → rework</li>
+        </ul>
+        <p style="margin-top:10px"><strong style="color:#f85149">Visual checks per AWS D1.1 Cl. 6.</strong> No cracks, full fusion, correct profile. Undercut ≤ 1&nbsp;mm. Porosity &lt; 3&nbsp;mm isolated.</p>
+      </div>
+      <div class="dsi-info">
+        <h4>⚙️ Parameter Tip</h4>
+        <p>Cross-check Heat Input ≈ (60 × A × V) / Speed (mm/min). Stay inside the WPS envelope.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div>
+    <div class="dsi-table-head"><h3>Session Submissions</h3><span class="dsi-count" id="rcnt">0 Records</span></div>
+    <div class="dsi-table-wrap">
+      <table class="dsi-tbl">
+        <thead>
+          <tr><th>Project</th><th>Job ID</th><th>Beam UID</th><th>Cell</th><th>Weld</th><th>Joint</th><th>Grade</th><th>Result</th><th>Operator</th><th>Date</th></tr>
+        </thead>
+        <tbody id="tbl"><tr><td colspan="10" class="dsi-empty">No submissions yet — fill in the form above.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer class="dsi-footer">&copy; 2025 Dalal Steel Industries &nbsp;·&nbsp; Robotic Welding &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
+<div id="dsi-toast" class="dsi-toast"></div>
+
+<script src="/assets/portal.js"></script>
+<script>
+(function(){
+  const SECTION = 'welding';
+  document.getElementById('f-date').valueAsDate = new Date();
+
+  DSI.loadProjects().then(list => DSI.populateProjectSelect(document.getElementById('f-proj'), list));
+  document.getElementById('f-proj').addEventListener('change', e => {
+    document.getElementById('f-pbadge').style.display = e.target.value ? 'inline-flex' : 'none';
+  });
+
+  DSI.bindImageUpload({ dropId:'img-drop', inputId:'img-input', previewId:'img-preview', thumbId:'img-thumb', nameId:'img-name' });
+
+  function render(){
+    const rows = DSI.readRows(SECTION);
+    document.getElementById('rcnt').textContent = rows.length + ' Record' + (rows.length !== 1 ? 's' : '');
+    const tbl = document.getElementById('tbl');
+    if (!rows.length) tbl.innerHTML = '<tr><td colspan="10" class="dsi-empty">No submissions yet — fill in the form above.</td></tr>';
+    else tbl.innerHTML = rows.map(r =>
+      '<tr>' +
+        '<td><span class="dsi-pill">' + DSI.esc(r.projectNumber) + '</span></td>' +
+        '<td>' + DSI.esc(r.id) + '</td>' +
+        '<td>' + DSI.esc(r.beamUid) + '</td>' +
+        '<td>' + DSI.esc(r.cell) + '</td>' +
+        '<td>' + DSI.esc(r.weldType) + '</td>' +
+        '<td>' + DSI.esc(r.joint) + '</td>' +
+        '<td>' + DSI.esc(r.grade) + '</td>' +
+        '<td><span class="dsi-tag ' + DSI.statusClass(r.result) + '">' + DSI.esc(r.result) + '</span></td>' +
+        '<td>' + DSI.esc(r.operator) + '</td>' +
+        '<td class="muted">' + DSI.esc(r.date) + '</td>' +
+      '</tr>'
+    ).join('');
+    const counts = { Accepted:0, Rejected:0, Reworked:0 };
+    rows.forEach(r => { if (counts[r.result] !== undefined) counts[r.result]++; });
+    document.getElementById('stTotal').textContent = rows.length;
+    document.getElementById('stAcc').textContent = counts.Accepted;
+    document.getElementById('stRej').textContent = counts.Rejected;
+    document.getElementById('stRew').textContent = counts.Reworked;
+  }
+  render();
+
+  document.getElementById('submitBtn').addEventListener('click', () => {
+    const proj = document.getElementById('f-proj').value;
+    const v = id => {
+      const el = document.getElementById(id);
+      return typeof el.value === 'string' ? el.value.trim() : el.value;
+    };
+    const id = v('f-id'), uid = v('f-uid'), cell = v('f-cell'), weldType = v('f-wtype'),
+      joint = v('f-joint'), wire = v('f-wire'), gas = v('f-gas'),
+      amp = v('f-amp'), volt = v('f-volt'), speed = v('f-speed'), feed = v('f-feed'),
+      length = v('f-len'), passes = v('f-pass'),
+      grade = v('f-grade'), result = v('f-result'),
+      by = v('f-by'), date = v('f-date'), notes = v('f-notes');
+    if (!proj) return DSI.toast('Please select a project number', 'error');
+    if (!id || !uid || !cell || !weldType || !joint || !wire || !gas ||
+        !amp || !volt || !speed || !feed || !length || !passes ||
+        !grade || !result || !by || !date)
+      return DSI.toast('Please fill in all required fields', 'error');
+    const imgInput = document.getElementById('img-input');
+    const imageName = imgInput.files && imgInput.files[0] ? imgInput.files[0].name : '';
+    DSI.addRow(SECTION, {
+      id, projectNumber: proj, beamUid: uid,
+      cell, weldType, joint, wire, gas,
+      amperage: Number(amp), voltage: Number(volt),
+      travelSpeed: Number(speed), wireFeed: Number(feed),
+      length: Number(length), passes: Number(passes),
+      grade, result, operator: by, date, notes, imageName,
+      timestamp: new Date().toISOString()
+    });
+    DSI.toast('✓ Weld record submitted', 'success');
+    resetForm();
+    render();
+  });
+
+  function resetForm(){
+    ['f-id','f-uid','f-wire','f-gas','f-amp','f-volt','f-speed','f-feed','f-len','f-pass','f-by','f-notes']
+      .forEach(i => document.getElementById(i).value = '');
+    ['f-cell','f-wtype','f-joint','f-grade','f-result','f-proj']
+      .forEach(i => document.getElementById(i).selectedIndex = 0);
+    document.getElementById('f-pbadge').style.display = 'none';
+    document.getElementById('f-date').valueAsDate = new Date();
+    document.getElementById('img-input').value = '';
+    document.getElementById('img-preview').style.display = 'none';
+    document.getElementById('img-drop').style.display = 'block';
+  }
+})();
+</script>
+
+</body>
+</html>

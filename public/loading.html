@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Loading Team — Dalal Steel Industries</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/portal.css"/>
+</head>
+<body class="accent-orange">
+
+<header class="dsi-header">
+  <div class="dsi-brand">
+    <div class="dsi-logo"><img src="https://cdn.prod.website-files.com/642d748a11520d3a83eb2715/646a10def01604a84f90b302_Asset%201.svg" alt="DSI" onerror="this.style.display='none'"/></div>
+    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Loading Team</span></div>
+  </div>
+  <div class="dsi-header-right">
+    <span class="dsi-badge">🚛 Loading</span>
+    <a href="/" class="dsi-back">← Home</a>
+  </div>
+</header>
+
+<section class="dsi-hero accent-orange">
+  <div class="dsi-hero-inner">
+    <div>
+      <h2>Loading &amp; <em>Dispatch</em> Log</h2>
+      <p>Track loaded pieces, vehicle assignments and dispatch status across active projects.</p>
+    </div>
+  </div>
+</section>
+
+<main class="dsi-main accent-orange">
+
+  <div class="dsi-stats">
+    <div class="dsi-stat"><div class="dsi-stat-icon b">📦</div><div><div class="dsi-stat-value" id="stTotal">0</div><div class="dsi-stat-label">Total Loaded</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon g">🚚</div><div><div class="dsi-stat-value" id="stDispatched">0</div><div class="dsi-stat-label">Dispatched</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon y">🪜</div><div><div class="dsi-stat-value" id="stPartial">0</div><div class="dsi-stat-label">Partial</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon r">⏸️</div><div><div class="dsi-stat-value" id="stHold">0</div><div class="dsi-stat-label">On Hold</div></div></div>
+  </div>
+
+  <div class="dsi-layout">
+
+    <div class="dsi-card">
+      <div class="dsi-card-head">
+        <div class="dsi-card-head-icon">📝</div>
+        <div><h3>New Loading Record</h3><p>Fields marked * are required</p></div>
+      </div>
+      <div class="dsi-card-body">
+
+        <div class="dsi-grid">
+          <div class="dsi-field full">
+            <label>Project Number <span class="req">*</span></label>
+            <select id="f-proj"></select>
+            <div class="dsi-pbadge" id="f-pbadge">✓ Project selected — ready to submit</div>
+          </div>
+
+          <div class="dsi-divider"><span>Load Details</span></div>
+          <div class="dsi-field"><label>Loading ID <span class="req">*</span></label><input type="text" id="f-id" placeholder="e.g. LD-001"/></div>
+          <div class="dsi-field"><label>Beam / Member UID <span class="req">*</span></label><input type="text" id="f-uid" placeholder="e.g. BM-4412-A"/></div>
+          <div class="dsi-field"><label>Truck / Vehicle # <span class="req">*</span></label><input type="text" id="f-truck" placeholder="e.g. KSA-1234"/></div>
+          <div class="dsi-field"><label>Pieces Loaded <span class="req">*</span></label><input type="number" id="f-pieces" min="0" step="1" placeholder="e.g. 12"/></div>
+
+          <div class="dsi-divider"><span>Status &amp; Dispatch</span></div>
+          <div class="dsi-field">
+            <label>Loading Status <span class="req">*</span></label>
+            <select id="f-status">
+              <option value="" disabled selected>Select status…</option>
+              <option>Loaded</option>
+              <option>Partial</option>
+              <option>On Hold</option>
+              <option>Dispatched</option>
+            </select>
+          </div>
+          <div class="dsi-field"><label>Loading Date <span class="req">*</span></label><input type="date" id="f-date"/></div>
+          <div class="dsi-field"><label>Loaded By <span class="req">*</span></label><input type="text" id="f-by" placeholder="Your full name"/></div>
+          <div class="dsi-field"><label>Destination <span class="req">*</span></label><input type="text" id="f-dest" placeholder="e.g. Site B, Riyadh"/></div>
+
+          <div class="dsi-field full"><label>Notes / Remarks</label><textarea id="f-notes" placeholder="Any handling notes, escort details, etc."></textarea></div>
+
+          <div class="dsi-field full">
+            <label>Image Attachment</label>
+            <div id="img-drop" class="dsi-drop">
+              <div class="di">📎</div>
+              <div class="dh">Click or drag image here</div>
+              <div class="ds">JPG, PNG, WEBP — max 5MB</div>
+            </div>
+            <input type="file" id="img-input" accept="image/*" style="display:none"/>
+            <div id="img-preview" class="dsi-preview">
+              <img id="img-thumb"/>
+              <button type="button">✕</button>
+              <div class="dn" id="img-name"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="dsi-card-foot">
+        <span class="dsi-req-note">* Required fields</span>
+        <button class="dsi-submit" id="submitBtn"><div class="dsi-spinner"></div><span>Submit Record</span></button>
+      </div>
+    </div>
+
+    <div class="dsi-side">
+      <div class="dsi-info">
+        <h4>🚛 Loading Status</h4>
+        <ul>
+          <li><strong style="color:#3fb950">Loaded</strong>&nbsp;— Truck fully loaded, awaiting dispatch</li>
+          <li><strong style="color:#e39b37">Partial</strong>&nbsp;— Partial load, more pieces to follow</li>
+          <li><strong style="color:#e39b37">On Hold</strong>&nbsp;— Awaiting clearance or paperwork</li>
+          <li><strong style="color:#3fb950">Dispatched</strong>&nbsp;— Vehicle departed site</li>
+        </ul>
+      </div>
+      <div class="dsi-info">
+        <h4>📋 Reminder</h4>
+        <p>Record one row per truck/load event. If the same beam is split across vehicles, log each portion separately.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div>
+    <div class="dsi-table-head"><h3>Session Submissions</h3><span class="dsi-count" id="rcnt">0 Records</span></div>
+    <div class="dsi-table-wrap">
+      <table class="dsi-tbl">
+        <thead>
+          <tr><th>Project</th><th>Loading ID</th><th>Beam UID</th><th>Truck #</th><th>Pieces</th><th>Status</th><th>Loaded By</th><th>Destination</th><th>Date</th></tr>
+        </thead>
+        <tbody id="tbl"><tr><td colspan="9" class="dsi-empty">No submissions yet — fill in the form above.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer class="dsi-footer">&copy; 2025 Dalal Steel Industries &nbsp;·&nbsp; Loading &amp; Dispatch &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
+<div id="dsi-toast" class="dsi-toast"></div>
+
+<script src="/assets/portal.js"></script>
+<script>
+(function(){
+  const SECTION = 'loading';
+  document.getElementById('f-date').valueAsDate = new Date();
+
+  // Project dropdown + badge
+  let projects = [];
+  DSI.loadProjects().then(list => {
+    projects = list;
+    DSI.populateProjectSelect(document.getElementById('f-proj'), list);
+  });
+  document.getElementById('f-proj').addEventListener('change', e => {
+    document.getElementById('f-pbadge').style.display = e.target.value ? 'inline-flex' : 'none';
+  });
+
+  // Image upload
+  DSI.bindImageUpload({ dropId:'img-drop', inputId:'img-input', previewId:'img-preview', thumbId:'img-thumb', nameId:'img-name' });
+
+  // Render
+  function render(){
+    const rows = DSI.readRows(SECTION);
+    document.getElementById('rcnt').textContent = rows.length + ' Record' + (rows.length !== 1 ? 's' : '');
+    const tbl = document.getElementById('tbl');
+    if (!rows.length) { tbl.innerHTML = '<tr><td colspan="9" class="dsi-empty">No submissions yet — fill in the form above.</td></tr>'; }
+    else {
+      tbl.innerHTML = rows.map(r =>
+        '<tr>' +
+          '<td><span class="dsi-pill">' + DSI.esc(r.projectNumber) + '</span></td>' +
+          '<td>' + DSI.esc(r.id) + '</td>' +
+          '<td>' + DSI.esc(r.beamUid) + '</td>' +
+          '<td>' + DSI.esc(r.truck) + '</td>' +
+          '<td>' + DSI.esc(r.pieces) + '</td>' +
+          '<td><span class="dsi-tag ' + DSI.statusClass(r.status) + '">' + DSI.esc(r.status) + '</span></td>' +
+          '<td>' + DSI.esc(r.loadedBy) + '</td>' +
+          '<td>' + DSI.esc(r.destination) + '</td>' +
+          '<td class="muted">' + DSI.esc(r.date) + '</td>' +
+        '</tr>'
+      ).join('');
+    }
+    const counts = { Loaded:0, Partial:0, 'On Hold':0, Dispatched:0 };
+    rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+    document.getElementById('stTotal').textContent = rows.length;
+    document.getElementById('stDispatched').textContent = counts.Dispatched;
+    document.getElementById('stPartial').textContent = counts.Partial;
+    document.getElementById('stHold').textContent = counts['On Hold'];
+  }
+  render();
+
+  // Submit
+  document.getElementById('submitBtn').addEventListener('click', () => {
+    const proj = document.getElementById('f-proj').value;
+    const id = document.getElementById('f-id').value.trim();
+    const uid = document.getElementById('f-uid').value.trim();
+    const truck = document.getElementById('f-truck').value.trim();
+    const pieces = document.getElementById('f-pieces').value;
+    const status = document.getElementById('f-status').value;
+    const date = document.getElementById('f-date').value;
+    const by = document.getElementById('f-by').value.trim();
+    const dest = document.getElementById('f-dest').value.trim();
+    const notes = document.getElementById('f-notes').value.trim();
+    if (!proj) return DSI.toast('Please select a project number', 'error');
+    if (!id || !uid || !truck || !pieces || !status || !date || !by || !dest)
+      return DSI.toast('Please fill in all required fields', 'error');
+    const imgInput = document.getElementById('img-input');
+    const imageName = imgInput.files && imgInput.files[0] ? imgInput.files[0].name : '';
+    DSI.addRow(SECTION, {
+      id, projectNumber: proj, beamUid: uid, truck, pieces: Number(pieces),
+      status, date, loadedBy: by, destination: dest, notes, imageName,
+      timestamp: new Date().toISOString()
+    });
+    DSI.toast('✓ Loading record submitted', 'success');
+    resetForm();
+    render();
+  });
+
+  function resetForm(){
+    ['f-id','f-uid','f-truck','f-pieces','f-by','f-dest','f-notes'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('f-status').selectedIndex = 0;
+    document.getElementById('f-proj').selectedIndex = 0;
+    document.getElementById('f-pbadge').style.display = 'none';
+    document.getElementById('f-date').valueAsDate = new Date();
+    document.getElementById('img-input').value = '';
+    document.getElementById('img-preview').style.display = 'none';
+    document.getElementById('img-drop').style.display = 'block';
+  }
+})();
+</script>
+
+</body>
+</html>

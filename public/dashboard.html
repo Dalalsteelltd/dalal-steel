@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Manager Dashboard — Dalal Steel Industries</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/portal.css"/>
+</head>
+<body class="accent-violet">
+
+<header class="dsi-header">
+  <div class="dsi-brand">
+    <div class="dsi-logo"><img src="https://cdn.prod.website-files.com/642d748a11520d3a83eb2715/646a10def01604a84f90b302_Asset%201.svg" alt="DSI" onerror="this.style.display='none'"/></div>
+    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Manager Dashboard</span></div>
+  </div>
+  <div class="dsi-header-right">
+    <span class="dsi-badge">📊 Overview</span>
+    <a href="/" class="dsi-back">← Home</a>
+  </div>
+</header>
+
+<section class="dsi-hero accent-violet">
+  <div class="dsi-hero-inner">
+    <div>
+      <h2>Operations <em>Overview</em></h2>
+      <p>Cross-department submissions with one-click access to the linked Airtable or Excel records.</p>
+    </div>
+  </div>
+</section>
+
+<main class="dsi-main accent-violet">
+
+  <div class="dsi-dash-summary">
+    <div class="dsi-stat"><div class="dsi-stat-icon v">📋</div><div><div class="dsi-stat-value" id="sumAll">0</div><div class="dsi-stat-label">Total Submissions</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon g">✅</div><div><div class="dsi-stat-value" id="sumOk">0</div><div class="dsi-stat-label">Accepted / Completed</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon y">⚠️</div><div><div class="dsi-stat-value" id="sumWarn">0</div><div class="dsi-stat-label">Partial / Rework / On Hold</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon r">❌</div><div><div class="dsi-stat-value" id="sumErr">0</div><div class="dsi-stat-label">Rejected / Failed</div></div></div>
+  </div>
+
+  <div class="dsi-filterbar">
+    <div class="dsi-field">
+      <label>Department</label>
+      <select id="fDept">
+        <option value="">All departments</option>
+        <option value="loading">Loading</option>
+        <option value="painting">Painting</option>
+        <option value="welding">Robotic Welding</option>
+      </select>
+    </div>
+    <div class="dsi-field">
+      <label>Project Number</label>
+      <select id="fProj"><option value="">All projects</option></select>
+    </div>
+    <div class="dsi-field">
+      <label>Status</label>
+      <select id="fStatus">
+        <option value="">All statuses</option>
+        <option value="ok">Accepted / Completed / Dispatched</option>
+        <option value="warn">Partial / Re-worked / On Hold / In Progress</option>
+        <option value="err">Rejected / Failed</option>
+      </select>
+    </div>
+    <div class="dsi-field">
+      <label>From — To</label>
+      <div style="display:flex;gap:6px"><input type="date" id="fFrom"/><input type="date" id="fTo"/></div>
+    </div>
+    <button id="fReset">Reset</button>
+  </div>
+
+  <div class="dsi-dash-grid">
+
+    <div class="dsi-dash-card dept-qc" id="card-qc">
+      <div class="dsi-dash-head">
+        <div class="dsi-dash-title"><span class="dot"></span>QC Inspection</div>
+        <div class="dsi-dash-badges">
+          <span class="dsi-tag neutral" id="qc-count">0</span>
+          <a class="dsi-tag info" href="/qc" style="text-decoration:none">Open →</a>
+        </div>
+      </div>
+      <div class="dsi-dash-body" id="body-qc">
+        <div class="dsi-dash-empty">QC records live on the QC page. Open it to view inspection submissions.</div>
+      </div>
+    </div>
+
+    <div class="dsi-dash-card dept-load" id="card-loading">
+      <div class="dsi-dash-head">
+        <div class="dsi-dash-title"><span class="dot"></span>Loading Team</div>
+        <div class="dsi-dash-badges"><span class="dsi-tag neutral" id="loading-count">0</span></div>
+      </div>
+      <div class="dsi-dash-body" id="body-loading"></div>
+    </div>
+
+    <div class="dsi-dash-card dept-paint" id="card-painting">
+      <div class="dsi-dash-head">
+        <div class="dsi-dash-title"><span class="dot"></span>Painting &amp; Finishing</div>
+        <div class="dsi-dash-badges"><span class="dsi-tag neutral" id="painting-count">0</span></div>
+      </div>
+      <div class="dsi-dash-body" id="body-painting"></div>
+    </div>
+
+    <div class="dsi-dash-card dept-weld" id="card-welding">
+      <div class="dsi-dash-head">
+        <div class="dsi-dash-title"><span class="dot"></span>Robotic Welding</div>
+        <div class="dsi-dash-badges"><span class="dsi-tag neutral" id="welding-count">0</span></div>
+      </div>
+      <div class="dsi-dash-body" id="body-welding"></div>
+    </div>
+
+  </div>
+
+  <div class="dsi-dash-info">Click any submission ID to open the linked Airtable record or Excel sheet for that project.</div>
+
+</main>
+
+<footer class="dsi-footer">&copy; 2025 Dalal Steel Industries &nbsp;·&nbsp; Manager Dashboard &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
+<div id="dsi-toast" class="dsi-toast"></div>
+
+<script src="/assets/portal.js"></script>
+<script>
+(function(){
+  let projects = [];
+  let projectIndex = {};
+
+  function ctxFor(section, r){
+    if (section === 'loading')  return '<strong>' + DSI.esc(r.beamUid) + '</strong> · Truck ' + DSI.esc(r.truck) + ' · ' + DSI.esc(r.pieces) + ' pcs → ' + DSI.esc(r.destination);
+    if (section === 'painting') return '<strong>' + DSI.esc(r.beamUid) + '</strong> · ' + DSI.esc(r.coatingType) + ' · DFT ' + DSI.esc(r.dft) + ' μm · ' + DSI.esc(r.surfacePrep);
+    if (section === 'welding')  return '<strong>' + DSI.esc(r.beamUid) + '</strong> · ' + DSI.esc(r.cell) + ' · ' + DSI.esc(r.weldType) + ' / ' + DSI.esc(r.joint) + ' · Grade ' + DSI.esc(r.grade);
+    return '';
+  }
+  function statusFor(section, r){
+    return section === 'welding' ? r.result : r.status;
+  }
+
+  function openLink(projectId){
+    const p = projectIndex[projectId];
+    if (!p) { DSI.toast('Project not found', 'error'); return; }
+    const url = p.airtableUrl || p.excelUrl;
+    if (!url) { DSI.toast('Link not configured for ' + projectId + ' yet', 'error'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function matches(section, r){
+    const dept = document.getElementById('fDept').value;
+    const proj = document.getElementById('fProj').value;
+    const st = document.getElementById('fStatus').value;
+    const from = document.getElementById('fFrom').value;
+    const to = document.getElementById('fTo').value;
+    if (dept && dept !== section) return false;
+    if (proj && r.projectNumber !== proj) return false;
+    if (st) {
+      const cls = DSI.statusClass(statusFor(section, r));
+      if (cls !== st) return false;
+    }
+    if (from && r.date && r.date < from) return false;
+    if (to && r.date && r.date > to) return false;
+    return true;
+  }
+
+  function renderSection(section){
+    const all = DSI.readRows(section);
+    const rows = all.filter(r => matches(section, r));
+    const body = document.getElementById('body-' + section);
+    document.getElementById(section + '-count').textContent = rows.length;
+    if (!rows.length) {
+      body.innerHTML = '<div class="dsi-dash-empty">No matching submissions yet.</div>';
+      return;
+    }
+    body.innerHTML = rows.slice(0, 30).map(r => {
+      const status = statusFor(section, r);
+      return '<div class="dsi-dash-row">' +
+        '<button class="dsi-id-btn" data-proj="' + DSI.esc(r.projectNumber) + '" title="Open Airtable/Excel for ' + DSI.esc(r.projectNumber) + '">' +
+          DSI.esc(r.id) + ' ↗' +
+        '</button>' +
+        '<div class="dsi-dash-context">' + ctxFor(section, r) + '</div>' +
+        '<span class="dsi-tag ' + DSI.statusClass(status) + '">' + DSI.esc(status) + '</span>' +
+        '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.timestamp || r.date)) + '</span>' +
+      '</div>';
+    }).join('');
+    body.querySelectorAll('.dsi-id-btn').forEach(btn => {
+      btn.addEventListener('click', () => openLink(btn.dataset.proj));
+    });
+  }
+
+  function renderSummary(){
+    const sections = ['loading','painting','welding'];
+    let total = 0, ok = 0, warn = 0, err = 0;
+    sections.forEach(s => {
+      const rows = DSI.readRows(s).filter(r => matches(s, r));
+      total += rows.length;
+      rows.forEach(r => {
+        const cls = DSI.statusClass(statusFor(s, r));
+        if (cls === 'ok') ok++;
+        else if (cls === 'warn') warn++;
+        else if (cls === 'err') err++;
+      });
+    });
+    document.getElementById('sumAll').textContent = total;
+    document.getElementById('sumOk').textContent = ok;
+    document.getElementById('sumWarn').textContent = warn;
+    document.getElementById('sumErr').textContent = err;
+  }
+
+  function renderAll(){
+    ['loading','painting','welding'].forEach(renderSection);
+    renderSummary();
+  }
+
+  // Load projects, populate filter
+  DSI.loadProjects().then(list => {
+    projects = list;
+    projects.forEach(p => projectIndex[p.id] = p);
+    const fProj = document.getElementById('fProj');
+    list.forEach(p => {
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = p.name || p.id;
+      fProj.appendChild(o);
+    });
+    renderAll();
+  });
+
+  ['fDept','fProj','fStatus','fFrom','fTo'].forEach(id => {
+    document.getElementById(id).addEventListener('change', renderAll);
+  });
+  document.getElementById('fReset').addEventListener('click', () => {
+    document.getElementById('fDept').value = '';
+    document.getElementById('fProj').value = '';
+    document.getElementById('fStatus').value = '';
+    document.getElementById('fFrom').value = '';
+    document.getElementById('fTo').value = '';
+    renderAll();
+  });
+
+  // Live refresh when another tab writes to localStorage
+  window.addEventListener('storage', e => {
+    if (e.key && e.key.startsWith('dsi_rows_')) renderAll();
+  });
+})();
+</script>
+
+</body>
+</html>
