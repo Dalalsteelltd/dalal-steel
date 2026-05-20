@@ -469,6 +469,64 @@ body.landing .dept-paint .dsi-dept-icon{box-shadow:0 0 0 1px rgba(88,166,255,.22
 body.landing .dept-weld .dsi-dept-icon{box-shadow:0 0 0 1px rgba(248,81,73,.22) inset, 0 8px 22px rgba(248,81,73,.20)}
 body.landing .dept-mgr  .dsi-dept-icon{box-shadow:0 0 0 1px rgba(163,130,255,.28) inset, 0 8px 22px rgba(163,130,255,.26)}
 
+/* ───────────────────────────────────────────────────────────────────────────
+   Landing site motto — large serif italic blockquote with decorative
+   quotation marks. Scoped so it only shows on body.landing.
+   ─────────────────────────────────────────────────────────────────────────── */
+.dsi-quote-band{
+  max-width:980px;margin:6px auto 4px;padding:28px 28px 20px;text-align:center;position:relative;
+}
+.dsi-quote-inner{
+  position:relative;padding:32px 36px 36px;
+  border:1px solid rgba(163,130,255,.18);
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(163,130,255,.07), rgba(163,130,255,.02));
+  backdrop-filter:blur(12px) saturate(140%);
+  -webkit-backdrop-filter:blur(12px) saturate(140%);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.05) inset,
+    0 18px 48px rgba(0,0,0,.28),
+    0 0 0 1px rgba(163,130,255,.04);
+}
+.dsi-quote-inner::before{
+  content:'';position:absolute;left:18px;right:18px;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(163,130,255,.55),transparent);
+  pointer-events:none;
+}
+.dsi-quote-mark{
+  font-family:'Cormorant Garamond','Times New Roman',serif;
+  font-style:italic;font-weight:600;font-size:5.6rem;line-height:.8;
+  color:rgba(163,130,255,.38);
+  position:absolute;user-select:none;pointer-events:none;
+  text-shadow:0 0 24px rgba(163,130,255,.22);
+}
+.dsi-quote-mark-open{top:-2px;left:22px}
+.dsi-quote-mark-close{bottom:-30px;right:22px}
+.dsi-quote{
+  margin:0;padding:0;border:0;
+  font-family:'Cormorant Garamond','Barlow',Georgia,serif;
+  font-style:italic;font-weight:500;
+  font-size:1.55rem;line-height:1.55;
+  letter-spacing:.005em;
+  color:#e9e4ff;
+  max-width:760px;margin:0 auto;
+  text-shadow:0 1px 12px rgba(163,130,255,.18);
+}
+.dsi-quote p{margin:0}
+.dsi-quote-rule{
+  margin:22px auto 0;width:46px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(163,130,255,.55),transparent);
+}
+
+@media(max-width:760px){
+  .dsi-quote-band{padding:18px 16px 8px}
+  .dsi-quote-inner{padding:28px 22px 30px}
+  .dsi-quote{font-size:1.15rem;line-height:1.55}
+  .dsi-quote-mark{font-size:4rem}
+  .dsi-quote-mark-open{top:-2px;left:10px}
+  .dsi-quote-mark-close{bottom:-22px;right:10px}
+}
+
 /* Manager Dashboard — small italic tagline under the hero subtitle */
 .dsi-motto{
   margin-top:10px;
