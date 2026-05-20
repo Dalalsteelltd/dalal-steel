@@ -7,6 +7,15 @@ const { PROJECT_TABLES, verifyDashboardCookie, fetchAirtable } = require('../lib
 const QC_PASS = new Set(['Accepted', 'Passed']);
 const QC_FAIL = new Set(['Rejected', 'Failed']);
 
+// ── Module-level cache.
+// Vercel keeps serverless instances warm for a few minutes between invocations,
+// so this in-memory cache absorbs almost all of the dashboard's auto-refresh
+// load. Cold starts simply repopulate it on the next request — no correctness
+// risk, just a one-off latency hit. TTL is short enough that the dashboard
+// still feels live to a manager watching the floor.
+const CACHE_TTL_MS = 30_000;
+let CACHE = { payload: null, builtAt: 0 };
+
 // Pull a single attachment URL out of an Airtable attachments field.
 function firstAttachmentUrl(value) {
   if (!Array.isArray(value) || !value.length) return '';
@@ -51,6 +60,28 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
 
+  // Serve from cache if still warm. The dashboard auto-refreshes every 60s, so
+  // even a single manager hits the cache half the time; multiple managers
+  // sharing one warm function instance amplify the win.
+  const now = Date.now();
+  const force = req.query && (req.query.fresh === '1' || req.query.nocache === '1');
+  if (!force && CACHE.payload && now - CACHE.builtAt < CACHE_TTL_MS) {
+    return res.status(200).json({
+      ...CACHE.payload,
+      fromCache: true,
+      cacheAgeMs: now - CACHE.builtAt
+    });
+  }
+
+  // Track which sources errored so the dashboard can surface staleness rather
+  // than silently rendering zeros when Airtable hiccups.
+  const sources = {
+    qc: { failed: [], errors: [] },
+    loading: { ok: true },
+    painting: { ok: true },
+    welding: { ok: true }
+  };
+
   try {
     // ── QC: fetch up to 100 most recent rows per project table in parallel.
     const qcPromises = Object.entries(PROJECT_TABLES).map(async ([project, table]) => {
@@ -67,6 +98,8 @@ module.exports = async function handler(req, res) {
           const records = await fetchAirtable(table, { pageSize: 100 });
           return { project, table, records };
         } catch (e2) {
+          sources.qc.failed.push(project);
+          sources.qc.errors.push({ project, message: e2.message });
           return { project, table, records: [], error: e2.message };
         }
       }
@@ -91,9 +124,9 @@ module.exports = async function handler(req, res) {
 
     const [qcResults, loadingRecords, paintingRecords, weldingRecords] = await Promise.all([
       Promise.all(qcPromises),
-      loadingPromise.catch(() => []),
-      paintingPromise.catch(() => []),
-      weldingPromise.catch(() => [])
+      loadingPromise.catch(e => { sources.loading = { ok: false, message: e.message }; return []; }),
+      paintingPromise.catch(e => { sources.painting = { ok: false, message: e.message }; return []; }),
+      weldingPromise.catch(e => { sources.welding = { ok: false, message: e.message }; return []; })
     ]);
 
     // ── Aggregate QC + build cross-project recent feed.
@@ -241,7 +274,19 @@ module.exports = async function handler(req, res) {
     const activeBatches = (loadingByStatus.Pending + loadingByStatus.Loaded) +
                           (paintingByCoating['In Progress'] + paintingByCoating['Not Started']);
 
-    return res.status(200).json({
+    const sourcesSummary = {
+      qcFailed: sources.qc.failed,
+      qcErrors: sources.qc.errors,
+      loading: sources.loading,
+      painting: sources.painting,
+      welding: sources.welding,
+      hasErrors: sources.qc.failed.length > 0 ||
+                 !sources.loading.ok ||
+                 !sources.painting.ok ||
+                 !sources.welding.ok
+    };
+
+    const payload = {
       generatedAt: new Date().toISOString(),
       kpis: {
         totalBeams,
@@ -269,8 +314,18 @@ module.exports = async function handler(req, res) {
         loading: recentLoading,
         painting: recentPainting,
         welding: recentWelding
-      }
-    });
+      },
+      sources: sourcesSummary
+    };
+
+    // Only cache a successful, error-free build. If a source errored we still
+    // return the partial payload to the caller but skip the cache write so the
+    // next request retries Airtable instead of pinning stale failures for 30s.
+    if (!sourcesSummary.hasErrors) {
+      CACHE = { payload, builtAt: Date.now() };
+    }
+
+    return res.status(200).json({ ...payload, fromCache: false, cacheAgeMs: 0 });
   } catch (err) {
     return res.status(500).json({ error: err.message || 'Internal error' });
   }

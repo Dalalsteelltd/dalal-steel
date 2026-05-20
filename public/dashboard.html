@@ -17,6 +17,8 @@
   </div>
   <div class="dsi-header-right">
     <span class="dsi-badge" id="dsi-updated">Updated —</span>
+    <span class="dsi-badge" id="dsi-source-warn" style="display:none;background:rgba(248,81,73,.18);border-color:#f85149;color:#f85149" title="Some data sources failed">⚠ <span id="dsi-source-warn-text">sources</span></span>
+    <span class="dsi-badge" id="dsi-cache-tag" style="display:none;background:rgba(125,133,144,.18);border-color:#7d8590;color:#7d8590" title="Served from short cache to limit Airtable load">⚡ cached</span>
     <button class="dsi-back" id="dsi-refresh" type="button" style="cursor:pointer">↻ Refresh</button>
     <a href="/" class="dsi-back">← Home</a>
     <button class="dsi-back" id="dsi-signout" type="button" style="cursor:pointer">Sign out</button>
@@ -287,12 +289,13 @@
     document.getElementById('kpiPending').textContent = (k.pendingComponents || 0) + ' pending';
   }
 
-  async function refresh(){
+  async function refresh(opts){
+    const force = !!(opts && opts.force);
     const refreshBtn = document.getElementById('dsi-refresh');
     refreshBtn.disabled = true;
     refreshBtn.textContent = '↻ Loading…';
     try {
-      const data = await DSI.getJson('/api/dashboard-data');
+      const data = await DSI.getJson('/api/dashboard-data' + (force ? '?fresh=1' : ''));
       setKpis(data.kpis);
       chLoading.data.datasets[0].data = [
         data.loadingByStatus.Pending,
@@ -314,6 +317,30 @@
       renderRecentQc(data.recent.qc || []);
       renderProjectTable(data.perProject);
       document.getElementById('dsi-updated').textContent = 'Updated ' + DSI.shortTime(data.generatedAt);
+
+      // Cache + source-health indicators.
+      const cacheTag = document.getElementById('dsi-cache-tag');
+      if (data.fromCache) {
+        cacheTag.style.display = '';
+        cacheTag.textContent = '⚡ cached ' + Math.round((data.cacheAgeMs || 0) / 1000) + 's';
+      } else {
+        cacheTag.style.display = 'none';
+      }
+      const warnBadge = document.getElementById('dsi-source-warn');
+      const warnText = document.getElementById('dsi-source-warn-text');
+      const s = data.sources || {};
+      const bad = [];
+      if (s.qcFailed && s.qcFailed.length) bad.push('QC: ' + s.qcFailed.join(','));
+      if (s.loading && s.loading.ok === false) bad.push('Loading');
+      if (s.painting && s.painting.ok === false) bad.push('Painting');
+      if (s.welding && s.welding.ok === false) bad.push('Welding');
+      if (bad.length) {
+        warnBadge.style.display = '';
+        warnText.textContent = bad.join(' · ');
+        warnBadge.title = 'These sources failed and may be stale:\n' + bad.join('\n');
+      } else {
+        warnBadge.style.display = 'none';
+      }
     } catch (err) {
       if (err.status === 401) {
         window.location.replace('/dashboard/login');
@@ -326,7 +353,7 @@
     }
   }
 
-  document.getElementById('dsi-refresh').addEventListener('click', refresh);
+  document.getElementById('dsi-refresh').addEventListener('click', () => refresh({ force: true }));
 
   // Beam search
   DSI.loadProjects().then(list => {
