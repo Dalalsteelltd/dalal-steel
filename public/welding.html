@@ -12,7 +12,7 @@
 <header class="dsi-header">
   <div class="dsi-brand">
     <div class="dsi-logo"><img src="https://cdn.prod.website-files.com/642d748a11520d3a83eb2715/646a10def01604a84f90b302_Asset%201.svg" alt="DSI" onerror="this.style.display='none'"/></div>
-    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Robotic Welding</span></div>
+    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Robotic Welding — Batch Operations</span></div>
   </div>
   <div class="dsi-header-right">
     <span class="dsi-badge">🤖 Welding</span>
@@ -23,8 +23,8 @@
 <section class="dsi-hero accent-red">
   <div class="dsi-hero-inner">
     <div>
-      <h2>Robotic <em>Welding</em> Log</h2>
-      <p>Capture weld parameters, joint configuration and AWS D1.1 quality outcomes per beam.</p>
+      <h2>Robotic <em>Welding</em> Batch Log</h2>
+      <p>One submission, many Beam UIDs. Record the cell, joint, weld parameters and AWS D1.1 quality outcome for an entire welding batch in seconds.</p>
     </div>
   </div>
 </section>
@@ -32,10 +32,10 @@
 <main class="dsi-main accent-red">
 
   <div class="dsi-stats">
-    <div class="dsi-stat"><div class="dsi-stat-icon b">🔥</div><div><div class="dsi-stat-value" id="stTotal">0</div><div class="dsi-stat-label">Total Welded</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon b">🔥</div><div><div class="dsi-stat-value" id="stBatches">0</div><div class="dsi-stat-label">Batches Today</div></div></div>
     <div class="dsi-stat"><div class="dsi-stat-icon g">✅</div><div><div class="dsi-stat-value" id="stAcc">0</div><div class="dsi-stat-label">Accepted</div></div></div>
     <div class="dsi-stat"><div class="dsi-stat-icon r">❌</div><div><div class="dsi-stat-value" id="stRej">0</div><div class="dsi-stat-label">Rejected</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon y">🔧</div><div><div class="dsi-stat-value" id="stRew">0</div><div class="dsi-stat-label">Reworked</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon v">🧮</div><div><div class="dsi-stat-value" id="stUnits">0</div><div class="dsi-stat-label">Total Units</div></div></div>
   </div>
 
   <div class="dsi-layout">
@@ -43,7 +43,7 @@
     <div class="dsi-card">
       <div class="dsi-card-head">
         <div class="dsi-card-head-icon">📝</div>
-        <div><h3>New Weld Record</h3><p>Fields marked * are required</p></div>
+        <div><h3>New Welding Batch</h3><p>Fields marked * are required</p></div>
       </div>
       <div class="dsi-card-body">
 
@@ -51,12 +51,26 @@
           <div class="dsi-field full">
             <label>Project Number <span class="req">*</span></label>
             <select id="f-proj"></select>
-            <div class="dsi-pbadge" id="f-pbadge">✓ Project selected — ready to submit</div>
+            <div class="dsi-pbadge" id="f-pbadge">✓ Project selected — batch will be tagged to this project</div>
           </div>
 
-          <div class="dsi-divider"><span>Job Identification</span></div>
-          <div class="dsi-field"><label>Weld Job ID <span class="req">*</span></label><input type="text" id="f-id" placeholder="e.g. WJ-001"/></div>
-          <div class="dsi-field"><label>Beam / Member UID <span class="req">*</span></label><input type="text" id="f-uid" placeholder="e.g. BM-4412-A"/></div>
+          <div class="dsi-divider"><span>Batch Identity</span></div>
+          <div class="dsi-field"><label>Weld Batch ID <span class="req">*</span></label><input type="text" id="f-bid" placeholder="Auto-generated"/></div>
+          <div class="dsi-field"><label>Weld Date &amp; Time <span class="req">*</span></label><input type="datetime-local" id="f-date"/></div>
+
+          <div class="dsi-divider"><span>Beam UID Batch List</span></div>
+          <div class="dsi-field full">
+            <label>Beam UIDs (one per line) <span class="req">*</span></label>
+            <textarea id="f-uids" rows="5" placeholder="BM-4412-A(3)&#10;BM-4500 x 2&#10;BM-4501"></textarea>
+            <div class="dsi-batch-hint">Per-entry format: <code>BM-4412(3)</code> or <code>BM-4412 x 3</code> or just <code>BM-4412</code> (defaults to 1). Separators between entries: newline, comma, semicolon.</div>
+            <div class="dsi-batch-preview empty" id="f-preview">
+              <div class="dsi-batch-totals">
+                <span>Parsed batch preview</span>
+                <span><span class="dsi-batch-total-num" id="f-total">0</span> &nbsp;units across <span id="f-lines">0</span> UID groups</span>
+              </div>
+              <div class="dsi-batch-chips" id="f-chips"></div>
+            </div>
+          </div>
 
           <div class="dsi-divider"><span>Cell &amp; Joint</span></div>
           <div class="dsi-field">
@@ -91,7 +105,7 @@
           <div class="dsi-field"><label>Weld Length (mm) <span class="req">*</span></label><input type="number" id="f-len" min="0" step="1" placeholder="e.g. 800"/></div>
           <div class="dsi-field"><label>Number of Passes <span class="req">*</span></label><input type="number" id="f-pass" min="1" step="1" placeholder="e.g. 2"/></div>
 
-          <div class="dsi-divider"><span>Quality &amp; Inspection</span></div>
+          <div class="dsi-divider"><span>Quality &amp; Operator</span></div>
           <div class="dsi-field">
             <label>Weld Quality Grade <span class="req">*</span></label>
             <select id="f-grade">
@@ -106,13 +120,12 @@
               <option>Accepted</option><option>Rejected</option><option>Reworked</option>
             </select>
           </div>
-          <div class="dsi-field"><label>Operator Name <span class="req">*</span></label><input type="text" id="f-by" placeholder="Operator name"/></div>
-          <div class="dsi-field"><label>Date <span class="req">*</span></label><input type="date" id="f-date"/></div>
+          <div class="dsi-field full"><label>Operator Name <span class="req">*</span></label><input type="text" id="f-by" placeholder="Your full name"/></div>
 
           <div class="dsi-field full"><label>Notes / Remarks</label><textarea id="f-notes" placeholder="Preheat temp, shielding observations, defects, etc."></textarea></div>
 
           <div class="dsi-field full">
-            <label>Image Attachment</label>
+            <label>Proof Image (optional)</label>
             <div id="img-drop" class="dsi-drop">
               <div class="di">📎</div>
               <div class="dh">Click or drag image here</div>
@@ -129,7 +142,7 @@
       </div>
       <div class="dsi-card-foot">
         <span class="dsi-req-note">* Required fields</span>
-        <button class="dsi-submit" id="submitBtn"><div class="dsi-spinner"></div><span>Submit Record</span></button>
+        <button class="dsi-submit" id="submitBtn"><div class="dsi-spinner"></div><span class="sl">Submit Batch</span></button>
       </div>
     </div>
 
@@ -145,6 +158,12 @@
         <p style="margin-top:10px"><strong style="color:#f85149">Visual checks per AWS D1.1 Cl. 6.</strong> No cracks, full fusion, correct profile. Undercut ≤ 1&nbsp;mm. Porosity &lt; 3&nbsp;mm isolated.</p>
       </div>
       <div class="dsi-info">
+        <h4>📋 Batch Entry Tips</h4>
+        <p>Type each Beam UID followed by the quantity welded with these parameters:</p>
+        <p style="font-family:'Barlow',monospace;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:#e6edf3;font-size:.85rem;line-height:1.7">BM-4412-A(3)<br/>BM-4500 x 2<br/>BM-4501</p>
+        <p>The parser will expand to <strong>6 units</strong> across <strong>3 UID groups</strong>.</p>
+      </div>
+      <div class="dsi-info">
         <h4>⚙️ Parameter Tip</h4>
         <p>Cross-check Heat Input ≈ (60 × A × V) / Speed (mm/min). Stay inside the WPS envelope.</p>
       </div>
@@ -153,106 +172,200 @@
   </div>
 
   <div>
-    <div class="dsi-table-head"><h3>Session Submissions</h3><span class="dsi-count" id="rcnt">0 Records</span></div>
+    <div class="dsi-table-head"><h3>Session Batches</h3><span class="dsi-count" id="rcnt">0 Batches</span></div>
     <div class="dsi-table-wrap">
       <table class="dsi-tbl">
         <thead>
-          <tr><th>Project</th><th>Job ID</th><th>Beam UID</th><th>Cell</th><th>Weld</th><th>Joint</th><th>Grade</th><th>Result</th><th>Operator</th><th>Date</th></tr>
+          <tr><th>Batch ID</th><th>Project</th><th>Cell</th><th>Weld</th><th>Joint</th><th>UID Groups</th><th>Units</th><th>Grade</th><th>Result</th><th>Operator</th><th>Date</th></tr>
         </thead>
-        <tbody id="tbl"><tr><td colspan="10" class="dsi-empty">No submissions yet — fill in the form above.</td></tr></tbody>
+        <tbody id="tbl"><tr><td colspan="11" class="dsi-empty">No batches yet — submit one above to start the session log.</td></tr></tbody>
       </table>
     </div>
   </div>
 
 </main>
 
-<footer class="dsi-footer">&copy; 2025 Dalal Steel Industries &nbsp;·&nbsp; Robotic Welding &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
+<footer class="dsi-footer">&copy; 2026 Dalal Steel Industries &nbsp;·&nbsp; Robotic Welding &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
 <div id="dsi-toast" class="dsi-toast"></div>
 
 <script src="/assets/portal.js"></script>
 <script>
 (function(){
   const SECTION = 'welding';
-  document.getElementById('f-date').valueAsDate = new Date();
 
+  // Default to now in the local <input type="datetime-local">.
+  (function initDate(){
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('f-date').value =
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  })();
+
+  // Project dropdown
   DSI.loadProjects().then(list => DSI.populateProjectSelect(document.getElementById('f-proj'), list));
   document.getElementById('f-proj').addEventListener('change', e => {
     document.getElementById('f-pbadge').style.display = e.target.value ? 'inline-flex' : 'none';
   });
 
+  // Auto-generate batch ID
+  document.getElementById('f-bid').value = DSI.genBatchId('WJ');
+
+  // Image upload binding
   DSI.bindImageUpload({ dropId:'img-drop', inputId:'img-input', previewId:'img-preview', thumbId:'img-thumb', nameId:'img-name' });
 
+  // Live batch preview
+  const uidsEl = document.getElementById('f-uids');
+  const previewEl = document.getElementById('f-preview');
+  const chipsEl = document.getElementById('f-chips');
+  const totalEl = document.getElementById('f-total');
+  const linesEl = document.getElementById('f-lines');
+  function refreshPreview(){
+    const { items, totalQty, errors } = DSI.parseBatch(uidsEl.value);
+    totalEl.textContent = totalQty;
+    linesEl.textContent = items.length;
+    chipsEl.innerHTML = '';
+    items.forEach(it => {
+      const span = document.createElement('span');
+      span.className = 'dsi-batch-chip';
+      span.innerHTML = DSI.esc(it.uid) + ' <span class="qty">×' + it.qty + '</span>';
+      chipsEl.appendChild(span);
+    });
+    errors.forEach(err => {
+      const span = document.createElement('span');
+      span.className = 'dsi-batch-err';
+      span.textContent = '⚠ Line ' + err.line + ': ' + err.text;
+      chipsEl.appendChild(span);
+    });
+    previewEl.classList.toggle('empty', !items.length && !errors.length);
+  }
+  uidsEl.addEventListener('input', refreshPreview);
+  refreshPreview();
+
+  // Render the session log
   function render(){
     const rows = DSI.readRows(SECTION);
-    document.getElementById('rcnt').textContent = rows.length + ' Record' + (rows.length !== 1 ? 's' : '');
+    const rc = document.getElementById('rcnt');
+    rc.textContent = rows.length + ' Batch' + (rows.length !== 1 ? 'es' : '');
     const tbl = document.getElementById('tbl');
-    if (!rows.length) tbl.innerHTML = '<tr><td colspan="10" class="dsi-empty">No submissions yet — fill in the form above.</td></tr>';
-    else tbl.innerHTML = rows.map(r =>
-      '<tr>' +
-        '<td><span class="dsi-pill">' + DSI.esc(r.projectNumber) + '</span></td>' +
-        '<td>' + DSI.esc(r.id) + '</td>' +
-        '<td>' + DSI.esc(r.beamUid) + '</td>' +
-        '<td>' + DSI.esc(r.cell) + '</td>' +
-        '<td>' + DSI.esc(r.weldType) + '</td>' +
-        '<td>' + DSI.esc(r.joint) + '</td>' +
-        '<td>' + DSI.esc(r.grade) + '</td>' +
-        '<td><span class="dsi-tag ' + DSI.statusClass(r.result) + '">' + DSI.esc(r.result) + '</span></td>' +
-        '<td>' + DSI.esc(r.operator) + '</td>' +
-        '<td class="muted">' + DSI.esc(r.date) + '</td>' +
-      '</tr>'
-    ).join('');
-    const counts = { Accepted:0, Rejected:0, Reworked:0 };
-    rows.forEach(r => { if (counts[r.result] !== undefined) counts[r.result]++; });
-    document.getElementById('stTotal').textContent = rows.length;
-    document.getElementById('stAcc').textContent = counts.Accepted;
-    document.getElementById('stRej').textContent = counts.Rejected;
-    document.getElementById('stRew').textContent = counts.Reworked;
+    if (!rows.length) {
+      tbl.innerHTML = '<tr><td colspan="11" class="dsi-empty">No batches yet — submit one above to start the session log.</td></tr>';
+    } else {
+      tbl.innerHTML = rows.map(r =>
+        '<tr>' +
+          '<td><span class="dsi-pill">' + DSI.esc(r.weldBatchId) + '</span></td>' +
+          '<td>' + DSI.esc(r.project) + '</td>' +
+          '<td>' + DSI.esc(r.cell) + '</td>' +
+          '<td>' + DSI.esc(r.weldType) + '</td>' +
+          '<td>' + DSI.esc(r.joint) + '</td>' +
+          '<td>' + DSI.esc(r.itemCount) + '</td>' +
+          '<td>' + DSI.esc(r.totalQty) + '</td>' +
+          '<td>' + DSI.esc(r.grade) + '</td>' +
+          '<td><span class="dsi-tag ' + DSI.statusClass(r.result) + '">' + DSI.esc(r.result) + '</span></td>' +
+          '<td>' + DSI.esc(r.operator) + '</td>' +
+          '<td class="muted">' + DSI.esc(DSI.shortTime(r.weldDate)) + '</td>' +
+        '</tr>'
+      ).join('');
+    }
+    const todayBatches = rows.length;
+    const accepted = rows.filter(r => r.result === 'Accepted').length;
+    const rejected = rows.filter(r => r.result === 'Rejected').length;
+    const units = rows.reduce((s, r) => s + (Number(r.totalQty) || 0), 0);
+    document.getElementById('stBatches').textContent = todayBatches;
+    document.getElementById('stAcc').textContent = accepted;
+    document.getElementById('stRej').textContent = rejected;
+    document.getElementById('stUnits').textContent = units;
   }
   render();
 
-  document.getElementById('submitBtn').addEventListener('click', () => {
-    const proj = document.getElementById('f-proj').value;
-    const v = id => {
-      const el = document.getElementById(id);
-      return typeof el.value === 'string' ? el.value.trim() : el.value;
+  // Submit
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.addEventListener('click', async () => {
+    const payload = {
+      weldBatchId: document.getElementById('f-bid').value.trim(),
+      project:     document.getElementById('f-proj').value,
+      beamUidsRaw: document.getElementById('f-uids').value.trim(),
+      cell:        document.getElementById('f-cell').value,
+      weldType:    document.getElementById('f-wtype').value,
+      joint:       document.getElementById('f-joint').value,
+      wire:        document.getElementById('f-wire').value.trim(),
+      gas:         document.getElementById('f-gas').value.trim(),
+      amperage:    document.getElementById('f-amp').value,
+      voltage:     document.getElementById('f-volt').value,
+      travelSpeed: document.getElementById('f-speed').value,
+      wireFeed:    document.getElementById('f-feed').value,
+      weldLength:  document.getElementById('f-len').value,
+      passes:      document.getElementById('f-pass').value,
+      grade:       document.getElementById('f-grade').value,
+      result:      document.getElementById('f-result').value,
+      operator:    document.getElementById('f-by').value.trim(),
+      weldDate:    document.getElementById('f-date').value,
+      notes:       document.getElementById('f-notes').value.trim()
     };
-    const id = v('f-id'), uid = v('f-uid'), cell = v('f-cell'), weldType = v('f-wtype'),
-      joint = v('f-joint'), wire = v('f-wire'), gas = v('f-gas'),
-      amp = v('f-amp'), volt = v('f-volt'), speed = v('f-speed'), feed = v('f-feed'),
-      length = v('f-len'), passes = v('f-pass'),
-      grade = v('f-grade'), result = v('f-result'),
-      by = v('f-by'), date = v('f-date'), notes = v('f-notes');
-    if (!proj) return DSI.toast('Please select a project number', 'error');
-    if (!id || !uid || !cell || !weldType || !joint || !wire || !gas ||
-        !amp || !volt || !speed || !feed || !length || !passes ||
-        !grade || !result || !by || !date)
+    if (!payload.project) return DSI.toast('Please select a project number', 'error');
+    if (!payload.weldBatchId || !payload.beamUidsRaw || !payload.cell || !payload.weldType ||
+        !payload.joint || !payload.wire || !payload.gas ||
+        !payload.amperage || !payload.voltage || !payload.travelSpeed || !payload.wireFeed ||
+        !payload.weldLength || !payload.passes ||
+        !payload.grade || !payload.result || !payload.operator || !payload.weldDate)
       return DSI.toast('Please fill in all required fields', 'error');
-    const imgInput = document.getElementById('img-input');
-    const imageName = imgInput.files && imgInput.files[0] ? imgInput.files[0].name : '';
-    DSI.addRow(SECTION, {
-      id, projectNumber: proj, beamUid: uid,
-      cell, weldType, joint, wire, gas,
-      amperage: Number(amp), voltage: Number(volt),
-      travelSpeed: Number(speed), wireFeed: Number(feed),
-      length: Number(length), passes: Number(passes),
-      grade, result, operator: by, date, notes, imageName,
-      timestamp: new Date().toISOString()
-    });
-    DSI.toast('✓ Weld record submitted', 'success');
-    resetForm();
-    render();
+
+    const parsed = DSI.parseBatch(payload.beamUidsRaw);
+    if (!parsed.items.length) return DSI.toast('No valid Beam UIDs in the batch entry', 'error');
+    if (parsed.errors.length) return DSI.toast('Fix the highlighted lines before submitting', 'error');
+
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    submitBtn.querySelector('.sl').textContent = 'Submitting…';
+    try {
+      const imgInput = document.getElementById('img-input');
+      if (imgInput.files && imgInput.files[0]) {
+        submitBtn.querySelector('.sl').textContent = 'Uploading image…';
+        payload.imageUrl = await DSI.uploadImage(imgInput.files[0]);
+      }
+      submitBtn.querySelector('.sl').textContent = 'Saving batch…';
+      const resp = await DSI.postJson('/api/welding', payload);
+      DSI.addRow(SECTION, {
+        weldBatchId: payload.weldBatchId,
+        project:     payload.project,
+        cell:        payload.cell,
+        weldType:    payload.weldType,
+        joint:       payload.joint,
+        itemCount:   resp.itemCount,
+        totalQty:    resp.totalQty,
+        grade:       payload.grade,
+        result:      payload.result,
+        operator:    payload.operator,
+        weldDate:    payload.weldDate,
+        recordId:    resp.id,
+        timestamp:   new Date().toISOString()
+      });
+      DSI.toast('✓ Batch ' + payload.weldBatchId + ' saved (' + resp.totalQty + ' units)', 'success');
+      resetForm();
+      render();
+    } catch (err) {
+      DSI.toast('✗ ' + (err.message || 'Submission failed'), 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('loading');
+      submitBtn.querySelector('.sl').textContent = 'Submit Batch';
+    }
   });
 
   function resetForm(){
-    ['f-id','f-uid','f-wire','f-gas','f-amp','f-volt','f-speed','f-feed','f-len','f-pass','f-by','f-notes']
+    ['f-uids','f-wire','f-gas','f-amp','f-volt','f-speed','f-feed','f-len','f-pass','f-by','f-notes']
       .forEach(i => document.getElementById(i).value = '');
     ['f-cell','f-wtype','f-joint','f-grade','f-result','f-proj']
       .forEach(i => document.getElementById(i).selectedIndex = 0);
     document.getElementById('f-pbadge').style.display = 'none';
-    document.getElementById('f-date').valueAsDate = new Date();
+    document.getElementById('f-bid').value = DSI.genBatchId('WJ');
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('f-date').value =
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     document.getElementById('img-input').value = '';
     document.getElementById('img-preview').style.display = 'none';
     document.getElementById('img-drop').style.display = 'block';
+    refreshPreview();
   }
 })();
 </script>
