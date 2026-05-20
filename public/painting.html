@@ -12,7 +12,7 @@
 <header class="dsi-header">
   <div class="dsi-brand">
     <div class="dsi-logo"><img src="https://cdn.prod.website-files.com/642d748a11520d3a83eb2715/646a10def01604a84f90b302_Asset%201.svg" alt="DSI" onerror="this.style.display='none'"/></div>
-    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Painting &amp; Finishing</span></div>
+    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Painting &amp; Finishing — Batch Operations</span></div>
   </div>
   <div class="dsi-header-right">
     <span class="dsi-badge">🎨 Painting</span>
@@ -23,20 +23,19 @@
 <section class="dsi-hero accent-cyan">
   <div class="dsi-hero-inner">
     <div>
-      <h2>Painting &amp; <em>Coating</em> Log</h2>
-      <p>Record surface preparation, coating system, DFT readings and final finish status.</p>
+      <h2>Painting &amp; <em>Coating</em> Batch Log</h2>
+      <p>One submission, many Beam UIDs. Log the surface-prep grade, paint system and coating outcome for an entire production batch in one go.</p>
     </div>
   </div>
 </section>
 
 <main class="dsi-main accent-cyan">
 
-  <div class="dsi-stats five">
-    <div class="dsi-stat"><div class="dsi-stat-icon b">🎨</div><div><div class="dsi-stat-value" id="stTotal">0</div><div class="dsi-stat-label">Total Painted</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon g">✅</div><div><div class="dsi-stat-value" id="stComp">0</div><div class="dsi-stat-label">Completed</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon y">⏳</div><div><div class="dsi-stat-value" id="stProg">0</div><div class="dsi-stat-label">In Progress</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon r">❌</div><div><div class="dsi-stat-value" id="stFail">0</div><div class="dsi-stat-label">Failed</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon y">🔁</div><div><div class="dsi-stat-value" id="stRecoat">0</div><div class="dsi-stat-label">Re-coated</div></div></div>
+  <div class="dsi-stats">
+    <div class="dsi-stat"><div class="dsi-stat-icon b">🎨</div><div><div class="dsi-stat-value" id="stBatches">0</div><div class="dsi-stat-label">Batches Today</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon g">✅</div><div><div class="dsi-stat-value" id="stCompleted">0</div><div class="dsi-stat-label">Completed</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon y">⏳</div><div><div class="dsi-stat-value" id="stInProgress">0</div><div class="dsi-stat-label">In Progress</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon r">🔄</div><div><div class="dsi-stat-value" id="stRework">0</div><div class="dsi-stat-label">Rework</div></div></div>
   </div>
 
   <div class="dsi-layout">
@@ -44,7 +43,7 @@
     <div class="dsi-card">
       <div class="dsi-card-head">
         <div class="dsi-card-head-icon">📝</div>
-        <div><h3>New Painting Record</h3><p>Fields marked * are required</p></div>
+        <div><h3>New Painting Batch</h3><p>Fields marked * are required</p></div>
       </div>
       <div class="dsi-card-body">
 
@@ -52,56 +51,61 @@
           <div class="dsi-field full">
             <label>Project Number <span class="req">*</span></label>
             <select id="f-proj"></select>
-            <div class="dsi-pbadge" id="f-pbadge">✓ Project selected — ready to submit</div>
+            <div class="dsi-pbadge" id="f-pbadge">✓ Project selected — batch will be tagged to this project</div>
           </div>
 
-          <div class="dsi-divider"><span>Identification</span></div>
-          <div class="dsi-field"><label>Painting ID <span class="req">*</span></label><input type="text" id="f-id" placeholder="e.g. PT-001"/></div>
-          <div class="dsi-field"><label>Beam / Member UID <span class="req">*</span></label><input type="text" id="f-uid" placeholder="e.g. BM-4412-A"/></div>
+          <div class="dsi-divider"><span>Batch Identity</span></div>
+          <div class="dsi-field"><label>Paint Batch ID <span class="req">*</span></label><input type="text" id="f-bid" placeholder="Auto-generated"/></div>
+          <div class="dsi-field"><label>Completion Date <span class="req">*</span></label><input type="datetime-local" id="f-date"/></div>
 
-          <div class="dsi-divider"><span>Surface &amp; System</span></div>
+          <div class="dsi-divider"><span>Beam UID Batch List</span></div>
+          <div class="dsi-field full">
+            <label>Beam UIDs (one per line) <span class="req">*</span></label>
+            <textarea id="f-uids" rows="5" placeholder="RF1(10)&#10;RF2 x 5&#10;RF7(12)"></textarea>
+            <div class="dsi-batch-hint">Per-entry format: <code>RF1(10)</code> or <code>RF1 x 10</code> or just <code>RF1</code> (defaults to 1). Separators between entries: newline, comma, semicolon.</div>
+            <div class="dsi-batch-preview empty" id="f-preview">
+              <div class="dsi-batch-totals">
+                <span>Parsed batch preview</span>
+                <span><span class="dsi-batch-total-num" id="f-total">0</span> &nbsp;units across <span id="f-lines">0</span> UID groups</span>
+              </div>
+              <div class="dsi-batch-chips" id="f-chips"></div>
+            </div>
+          </div>
+
+          <div class="dsi-divider"><span>Surface Preparation</span></div>
           <div class="dsi-field">
-            <label>Surface Prep Grade <span class="req">*</span></label>
+            <label>Surface Prep Status <span class="req">*</span></label>
             <select id="f-prep">
-              <option value="" disabled selected>Select grade…</option>
-              <option>Sa 3</option>
-              <option>Sa 2½</option>
-              <option>Sa 2</option>
-              <option>Sa 1</option>
-              <option>St 2/3</option>
-            </select>
-          </div>
-          <div class="dsi-field">
-            <label>Coating Type <span class="req">*</span></label>
-            <select id="f-coat">
-              <option value="" disabled selected>Select type…</option>
-              <option>Primer</option>
-              <option>Intermediate</option>
-              <option>Top Coat</option>
-              <option>Touch-Up</option>
-            </select>
-          </div>
-          <div class="dsi-field"><label>Coating System / Brand <span class="req">*</span></label><input type="text" id="f-brand" placeholder="e.g. Jotun Penguard Express"/></div>
-          <div class="dsi-field"><label>DFT Reading (μm) <span class="req">*</span></label><input type="number" id="f-dft" min="0" step="1" placeholder="e.g. 80"/></div>
-
-          <div class="dsi-divider"><span>Outcome</span></div>
-          <div class="dsi-field">
-            <label>Painting Status <span class="req">*</span></label>
-            <select id="f-status">
               <option value="" disabled selected>Select status…</option>
-              <option>Completed</option>
+              <option>Not Started</option>
               <option>In Progress</option>
-              <option>Failed</option>
-              <option>Re-coated</option>
+              <option>Completed</option>
+              <option>Rework</option>
             </select>
           </div>
-          <div class="dsi-field"><label>Painted By <span class="req">*</span></label><input type="text" id="f-by" placeholder="Painter / operator name"/></div>
-          <div class="dsi-field"><label>Date <span class="req">*</span></label><input type="date" id="f-date"/></div>
+          <div class="dsi-field"><label>Paint System Type <span class="req">*</span></label><input type="text" id="f-system" placeholder="e.g. Epoxy Zinc / Polyurethane Topcoat"/></div>
 
-          <div class="dsi-field full"><label>Notes / Remarks</label><textarea id="f-notes" placeholder="Ambient conditions, drying time, observations…"></textarea></div>
+          <div class="dsi-divider"><span>Coating Outcome</span></div>
+          <div class="dsi-field">
+            <label>Coating Status <span class="req">*</span></label>
+            <select id="f-coat">
+              <option value="" disabled selected>Select status…</option>
+              <option>Not Started</option>
+              <option>In Progress</option>
+              <option>Completed</option>
+              <option>Rework</option>
+            </select>
+          </div>
+          <div class="dsi-field"><label>Quantity Completed</label><input type="number" id="f-qtydone" min="0" step="1" placeholder="Auto-fills when status is Completed"/></div>
+
+          <div class="dsi-divider"><span>Operator</span></div>
+          <div class="dsi-field"><label>Finished By <span class="req">*</span></label><input type="text" id="f-by" placeholder="Your full name"/></div>
+          <div class="dsi-field"><label>&nbsp;</label><div style="font-size:.78rem;color:var(--muted);line-height:1.55">Quantity Completed defaults to the full batch when Coating Status is <strong style="color:#3fb950">Completed</strong>, or 0 otherwise.</div></div>
+
+          <div class="dsi-field full"><label>Notes / Remarks</label><textarea id="f-notes" placeholder="DFT readings, holidays found, environmental conditions…"></textarea></div>
 
           <div class="dsi-field full">
-            <label>Image Attachment</label>
+            <label>Image (optional)</label>
             <div id="img-drop" class="dsi-drop">
               <div class="di">📎</div>
               <div class="dh">Click or drag image here</div>
@@ -118,120 +122,211 @@
       </div>
       <div class="dsi-card-foot">
         <span class="dsi-req-note">* Required fields</span>
-        <button class="dsi-submit" id="submitBtn"><div class="dsi-spinner"></div><span>Submit Record</span></button>
+        <button class="dsi-submit" id="submitBtn"><div class="dsi-spinner"></div><span class="sl">Submit Batch</span></button>
       </div>
     </div>
 
     <div class="dsi-side">
       <div class="dsi-info">
-        <h4>📐 Surface Prep — ISO 8501-1</h4>
+        <h4>🎨 Coating Phase</h4>
         <ul>
-          <li><strong>Sa 3</strong>&nbsp;— Visually clean to white metal</li>
-          <li><strong>Sa 2½</strong>&nbsp;— Near-white, traces of staining only (DSI minimum)</li>
-          <li><strong>Sa 2</strong>&nbsp;— Commercial blast</li>
-          <li><strong>Sa 1</strong>&nbsp;— Brush-off blast</li>
-          <li><strong>St 2/3</strong>&nbsp;— Hand/power tool cleaning</li>
+          <li><strong style="color:#7d8590">Not Started</strong>&nbsp;— Surface prep / coating not begun</li>
+          <li><strong style="color:#e39b37">In Progress</strong>&nbsp;— Active application underway</li>
+          <li><strong style="color:#3fb950">Completed</strong>&nbsp;— Fully coated, ready for next stage</li>
+          <li><strong style="color:#f85149">Rework</strong>&nbsp;— Failed inspection, needs touch-up</li>
         </ul>
-        <p style="margin-top:10px"><strong style="color:#58a6ff">DSI minimum:</strong> Sa 2½ before any protective coating on structural steel (ISO 8501-1).</p>
       </div>
       <div class="dsi-info">
-        <h4>💡 DFT Tip</h4>
-        <p>Record the average of the gauge readings. Flag any spot below 80% of nominal as a re-coat candidate.</p>
+        <h4>📋 Batch Entry Tips</h4>
+        <p>Type each Beam UID followed by the quantity processed in this session:</p>
+        <p style="font-family:'Barlow',monospace;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:#e6edf3;font-size:.85rem;line-height:1.7">RF1(10)<br/>RF2 x 5<br/>RF7(12)</p>
+        <p>The parser will expand to <strong>27 units</strong> across <strong>3 UID groups</strong>.</p>
       </div>
     </div>
 
   </div>
 
   <div>
-    <div class="dsi-table-head"><h3>Session Submissions</h3><span class="dsi-count" id="rcnt">0 Records</span></div>
+    <div class="dsi-table-head"><h3>Session Batches</h3><span class="dsi-count" id="rcnt">0 Batches</span></div>
     <div class="dsi-table-wrap">
       <table class="dsi-tbl">
         <thead>
-          <tr><th>Project</th><th>Painting ID</th><th>Beam UID</th><th>Prep</th><th>Coating</th><th>Brand</th><th>DFT μm</th><th>Status</th><th>Painted By</th><th>Date</th></tr>
+          <tr><th>Batch ID</th><th>Project</th><th>Paint System</th><th>UID Groups</th><th>Units</th><th>Done</th><th>Prep</th><th>Coating</th><th>Finished By</th><th>Date</th></tr>
         </thead>
-        <tbody id="tbl"><tr><td colspan="10" class="dsi-empty">No submissions yet — fill in the form above.</td></tr></tbody>
+        <tbody id="tbl"><tr><td colspan="10" class="dsi-empty">No batches yet — submit one above to start the session log.</td></tr></tbody>
       </table>
     </div>
   </div>
 
 </main>
 
-<footer class="dsi-footer">&copy; 2025 Dalal Steel Industries &nbsp;·&nbsp; Painting &amp; Finishing &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
+<footer class="dsi-footer">&copy; 2026 Dalal Steel Industries &nbsp;·&nbsp; Painting &amp; Finishing &nbsp;·&nbsp; ISO 8501-1 &nbsp;·&nbsp; ISO 12944 &nbsp;·&nbsp; SSPC</footer>
 <div id="dsi-toast" class="dsi-toast"></div>
 
 <script src="/assets/portal.js"></script>
 <script>
 (function(){
   const SECTION = 'painting';
-  document.getElementById('f-date').valueAsDate = new Date();
+
+  (function initDate(){
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('f-date').value =
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  })();
 
   DSI.loadProjects().then(list => DSI.populateProjectSelect(document.getElementById('f-proj'), list));
   document.getElementById('f-proj').addEventListener('change', e => {
     document.getElementById('f-pbadge').style.display = e.target.value ? 'inline-flex' : 'none';
   });
 
+  document.getElementById('f-bid').value = DSI.genBatchId('PT');
+
   DSI.bindImageUpload({ dropId:'img-drop', inputId:'img-input', previewId:'img-preview', thumbId:'img-thumb', nameId:'img-name' });
+
+  // Live batch preview
+  const uidsEl = document.getElementById('f-uids');
+  const previewEl = document.getElementById('f-preview');
+  const chipsEl = document.getElementById('f-chips');
+  const totalEl = document.getElementById('f-total');
+  const linesEl = document.getElementById('f-lines');
+  const qtyDoneEl = document.getElementById('f-qtydone');
+  const coatEl = document.getElementById('f-coat');
+  function refreshPreview(){
+    const { items, totalQty, errors } = DSI.parseBatch(uidsEl.value);
+    totalEl.textContent = totalQty;
+    linesEl.textContent = items.length;
+    chipsEl.innerHTML = '';
+    items.forEach(it => {
+      const span = document.createElement('span');
+      span.className = 'dsi-batch-chip';
+      span.innerHTML = DSI.esc(it.uid) + ' <span class="qty">×' + it.qty + '</span>';
+      chipsEl.appendChild(span);
+    });
+    errors.forEach(err => {
+      const span = document.createElement('span');
+      span.className = 'dsi-batch-err';
+      span.textContent = '⚠ Line ' + err.line + ': ' + err.text;
+      chipsEl.appendChild(span);
+    });
+    previewEl.classList.toggle('empty', !items.length && !errors.length);
+    // Auto-suggest quantity completed based on coating status
+    if (!qtyDoneEl.dataset.dirty) {
+      qtyDoneEl.value = coatEl.value === 'Completed' ? totalQty : (qtyDoneEl.value || '');
+    }
+  }
+  uidsEl.addEventListener('input', refreshPreview);
+  coatEl.addEventListener('change', () => {
+    if (!qtyDoneEl.dataset.dirty) refreshPreview();
+  });
+  qtyDoneEl.addEventListener('input', () => { qtyDoneEl.dataset.dirty = '1'; });
+  refreshPreview();
 
   function render(){
     const rows = DSI.readRows(SECTION);
-    document.getElementById('rcnt').textContent = rows.length + ' Record' + (rows.length !== 1 ? 's' : '');
+    document.getElementById('rcnt').textContent = rows.length + ' Batch' + (rows.length !== 1 ? 'es' : '');
     const tbl = document.getElementById('tbl');
-    if (!rows.length) tbl.innerHTML = '<tr><td colspan="10" class="dsi-empty">No submissions yet — fill in the form above.</td></tr>';
-    else tbl.innerHTML = rows.map(r =>
-      '<tr>' +
-        '<td><span class="dsi-pill">' + DSI.esc(r.projectNumber) + '</span></td>' +
-        '<td>' + DSI.esc(r.id) + '</td>' +
-        '<td>' + DSI.esc(r.beamUid) + '</td>' +
-        '<td>' + DSI.esc(r.surfacePrep) + '</td>' +
-        '<td>' + DSI.esc(r.coatingType) + '</td>' +
-        '<td>' + DSI.esc(r.brand) + '</td>' +
-        '<td>' + DSI.esc(r.dft) + '</td>' +
-        '<td><span class="dsi-tag ' + DSI.statusClass(r.status) + '">' + DSI.esc(r.status) + '</span></td>' +
-        '<td>' + DSI.esc(r.paintedBy) + '</td>' +
-        '<td class="muted">' + DSI.esc(r.date) + '</td>' +
-      '</tr>'
-    ).join('');
-
-    const counts = { Completed:0, 'In Progress':0, Failed:0, 'Re-coated':0 };
-    rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
-    document.getElementById('stTotal').textContent = rows.length;
-    document.getElementById('stComp').textContent = counts.Completed;
-    document.getElementById('stProg').textContent = counts['In Progress'];
-    document.getElementById('stFail').textContent = counts.Failed;
-    document.getElementById('stRecoat').textContent = counts['Re-coated'];
+    if (!rows.length) {
+      tbl.innerHTML = '<tr><td colspan="10" class="dsi-empty">No batches yet — submit one above to start the session log.</td></tr>';
+    } else {
+      tbl.innerHTML = rows.map(r =>
+        '<tr>' +
+          '<td><span class="dsi-pill">' + DSI.esc(r.batchId) + '</span></td>' +
+          '<td>' + DSI.esc(r.project) + '</td>' +
+          '<td>' + DSI.esc(r.paintSystem) + '</td>' +
+          '<td>' + DSI.esc(r.itemCount) + '</td>' +
+          '<td>' + DSI.esc(r.totalQty) + '</td>' +
+          '<td>' + DSI.esc(r.quantityCompleted) + '</td>' +
+          '<td><span class="dsi-tag ' + DSI.statusClass(r.surfacePrepStatus) + '">' + DSI.esc(r.surfacePrepStatus) + '</span></td>' +
+          '<td><span class="dsi-tag ' + DSI.statusClass(r.coatingStatus) + '">' + DSI.esc(r.coatingStatus) + '</span></td>' +
+          '<td>' + DSI.esc(r.finishedBy) + '</td>' +
+          '<td class="muted">' + DSI.esc(DSI.shortTime(r.completionDate)) + '</td>' +
+        '</tr>'
+      ).join('');
+    }
+    document.getElementById('stBatches').textContent = rows.length;
+    document.getElementById('stCompleted').textContent = rows.filter(r => r.coatingStatus === 'Completed').length;
+    document.getElementById('stInProgress').textContent = rows.filter(r => r.coatingStatus === 'In Progress').length;
+    document.getElementById('stRework').textContent = rows.filter(r => r.coatingStatus === 'Rework').length;
   }
   render();
 
-  document.getElementById('submitBtn').addEventListener('click', () => {
-    const proj = document.getElementById('f-proj').value;
-    const v = id => document.getElementById(id).value.trim ? document.getElementById(id).value.trim() : document.getElementById(id).value;
-    const id = v('f-id'), uid = v('f-uid'), prep = v('f-prep'), coat = v('f-coat'),
-      brand = v('f-brand'), dft = v('f-dft'), status = v('f-status'),
-      by = v('f-by'), date = v('f-date'), notes = v('f-notes');
-    if (!proj) return DSI.toast('Please select a project number', 'error');
-    if (!id || !uid || !prep || !coat || !brand || !dft || !status || !by || !date)
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.addEventListener('click', async () => {
+    const qtyVal = qtyDoneEl.value === '' ? null : Number(qtyDoneEl.value);
+    const payload = {
+      paintBatchId:       document.getElementById('f-bid').value.trim(),
+      project:            document.getElementById('f-proj').value,
+      beamUidsRaw:        document.getElementById('f-uids').value.trim(),
+      surfacePrepStatus:  document.getElementById('f-prep').value,
+      paintSystem:        document.getElementById('f-system').value.trim(),
+      coatingStatus:      coatEl.value,
+      quantityCompleted:  qtyVal,
+      finishedBy:         document.getElementById('f-by').value.trim(),
+      completionDate:     document.getElementById('f-date').value,
+      notes:              document.getElementById('f-notes').value.trim()
+    };
+    if (!payload.project) return DSI.toast('Please select a project number', 'error');
+    if (!payload.paintBatchId || !payload.beamUidsRaw || !payload.surfacePrepStatus || !payload.coatingStatus || !payload.paintSystem || !payload.finishedBy || !payload.completionDate)
       return DSI.toast('Please fill in all required fields', 'error');
-    const imgInput = document.getElementById('img-input');
-    const imageName = imgInput.files && imgInput.files[0] ? imgInput.files[0].name : '';
-    DSI.addRow(SECTION, {
-      id, projectNumber: proj, beamUid: uid,
-      surfacePrep: prep, coatingType: coat, brand,
-      dft: Number(dft), status, paintedBy: by, date, notes, imageName,
-      timestamp: new Date().toISOString()
-    });
-    DSI.toast('✓ Painting record submitted', 'success');
-    resetForm();
-    render();
+
+    const parsed = DSI.parseBatch(payload.beamUidsRaw);
+    if (!parsed.items.length) return DSI.toast('No valid Beam UIDs in the batch entry', 'error');
+    if (parsed.errors.length) return DSI.toast('Fix the highlighted lines before submitting', 'error');
+
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    submitBtn.querySelector('.sl').textContent = 'Submitting…';
+    try {
+      const imgInput = document.getElementById('img-input');
+      if (imgInput.files && imgInput.files[0]) {
+        submitBtn.querySelector('.sl').textContent = 'Uploading image…';
+        payload.imageUrl = await DSI.uploadImage(imgInput.files[0]);
+      }
+      submitBtn.querySelector('.sl').textContent = 'Saving to Airtable…';
+      const resp = await DSI.postJson('/api/painting', payload);
+      DSI.addRow(SECTION, {
+        batchId:           payload.paintBatchId,
+        project:           payload.project,
+        paintSystem:       payload.paintSystem,
+        itemCount:         resp.itemCount,
+        totalQty:          resp.totalQty,
+        quantityCompleted: resp.quantityCompleted,
+        surfacePrepStatus: payload.surfacePrepStatus,
+        coatingStatus:     payload.coatingStatus,
+        finishedBy:        payload.finishedBy,
+        completionDate:    payload.completionDate,
+        recordId:          resp.id,
+        timestamp:         new Date().toISOString()
+      });
+      DSI.toast('✓ Batch ' + payload.paintBatchId + ' saved (' + resp.quantityCompleted + '/' + resp.totalQty + ' done)', 'success');
+      resetForm();
+      render();
+    } catch (err) {
+      DSI.toast('✗ ' + (err.message || 'Submission failed'), 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('loading');
+      submitBtn.querySelector('.sl').textContent = 'Submit Batch';
+    }
   });
 
   function resetForm(){
-    ['f-id','f-uid','f-brand','f-dft','f-by','f-notes'].forEach(i => document.getElementById(i).value = '');
-    ['f-prep','f-coat','f-status','f-proj'].forEach(i => document.getElementById(i).selectedIndex = 0);
+    ['f-uids','f-system','f-by','f-notes','f-qtydone'].forEach(i => document.getElementById(i).value = '');
+    document.getElementById('f-prep').selectedIndex = 0;
+    document.getElementById('f-coat').selectedIndex = 0;
+    document.getElementById('f-proj').selectedIndex = 0;
     document.getElementById('f-pbadge').style.display = 'none';
-    document.getElementById('f-date').valueAsDate = new Date();
+    document.getElementById('f-bid').value = DSI.genBatchId('PT');
+    qtyDoneEl.dataset.dirty = '';
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('f-date').value =
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     document.getElementById('img-input').value = '';
     document.getElementById('img-preview').style.display = 'none';
     document.getElementById('img-drop').style.display = 'block';
+    refreshPreview();
   }
 })();
 </script>

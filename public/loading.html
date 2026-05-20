@@ -12,7 +12,7 @@
 <header class="dsi-header">
   <div class="dsi-brand">
     <div class="dsi-logo"><img src="https://cdn.prod.website-files.com/642d748a11520d3a83eb2715/646a10def01604a84f90b302_Asset%201.svg" alt="DSI" onerror="this.style.display='none'"/></div>
-    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Loading Team</span></div>
+    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Loading Team — Batch Operations</span></div>
   </div>
   <div class="dsi-header-right">
     <span class="dsi-badge">🚛 Loading</span>
@@ -23,8 +23,8 @@
 <section class="dsi-hero accent-orange">
   <div class="dsi-hero-inner">
     <div>
-      <h2>Loading &amp; <em>Dispatch</em> Log</h2>
-      <p>Track loaded pieces, vehicle assignments and dispatch status across active projects.</p>
+      <h2>Loading &amp; <em>Dispatch</em> Batch Log</h2>
+      <p>One submission, many Beam UIDs. Enter the batch your team loaded today and record the entire operation in seconds.</p>
     </div>
   </div>
 </section>
@@ -32,10 +32,10 @@
 <main class="dsi-main accent-orange">
 
   <div class="dsi-stats">
-    <div class="dsi-stat"><div class="dsi-stat-icon b">📦</div><div><div class="dsi-stat-value" id="stTotal">0</div><div class="dsi-stat-label">Total Loaded</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon g">🚚</div><div><div class="dsi-stat-value" id="stDispatched">0</div><div class="dsi-stat-label">Dispatched</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon y">🪜</div><div><div class="dsi-stat-value" id="stPartial">0</div><div class="dsi-stat-label">Partial</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon r">⏸️</div><div><div class="dsi-stat-value" id="stHold">0</div><div class="dsi-stat-label">On Hold</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon b">📦</div><div><div class="dsi-stat-value" id="stBatches">0</div><div class="dsi-stat-label">Batches Today</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon g">🚚</div><div><div class="dsi-stat-value" id="stDelivered">0</div><div class="dsi-stat-label">Delivered</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon y">⏱️</div><div><div class="dsi-stat-value" id="stPending">0</div><div class="dsi-stat-label">Pending / Loaded</div></div></div>
+    <div class="dsi-stat"><div class="dsi-stat-icon v">🧮</div><div><div class="dsi-stat-value" id="stUnits">0</div><div class="dsi-stat-label">Total Units</div></div></div>
   </div>
 
   <div class="dsi-layout">
@@ -43,7 +43,7 @@
     <div class="dsi-card">
       <div class="dsi-card-head">
         <div class="dsi-card-head-icon">📝</div>
-        <div><h3>New Loading Record</h3><p>Fields marked * are required</p></div>
+        <div><h3>New Loading Batch</h3><p>Fields marked * are required</p></div>
       </div>
       <div class="dsi-card-body">
 
@@ -51,34 +51,48 @@
           <div class="dsi-field full">
             <label>Project Number <span class="req">*</span></label>
             <select id="f-proj"></select>
-            <div class="dsi-pbadge" id="f-pbadge">✓ Project selected — ready to submit</div>
+            <div class="dsi-pbadge" id="f-pbadge">✓ Project selected — batch will be tagged to this project</div>
           </div>
 
-          <div class="dsi-divider"><span>Load Details</span></div>
-          <div class="dsi-field"><label>Loading ID <span class="req">*</span></label><input type="text" id="f-id" placeholder="e.g. LD-001"/></div>
-          <div class="dsi-field"><label>Beam / Member UID <span class="req">*</span></label><input type="text" id="f-uid" placeholder="e.g. BM-4412-A"/></div>
-          <div class="dsi-field"><label>Truck / Vehicle # <span class="req">*</span></label><input type="text" id="f-truck" placeholder="e.g. KSA-1234"/></div>
-          <div class="dsi-field"><label>Pieces Loaded <span class="req">*</span></label><input type="number" id="f-pieces" min="0" step="1" placeholder="e.g. 12"/></div>
+          <div class="dsi-divider"><span>Batch Identity</span></div>
+          <div class="dsi-field"><label>Loading Batch ID <span class="req">*</span></label><input type="text" id="f-bid" placeholder="Auto-generated"/></div>
+          <div class="dsi-field"><label>Loading Date &amp; Time <span class="req">*</span></label><input type="datetime-local" id="f-date"/></div>
 
-          <div class="dsi-divider"><span>Status &amp; Dispatch</span></div>
+          <div class="dsi-divider"><span>Vehicle &amp; Destination</span></div>
+          <div class="dsi-field"><label>Vehicle Number <span class="req">*</span></label><input type="text" id="f-truck" placeholder="e.g. KSA-1234"/></div>
+          <div class="dsi-field"><label>Destination / Site <span class="req">*</span></label><input type="text" id="f-dest" placeholder="e.g. Site B, Riyadh"/></div>
+
+          <div class="dsi-divider"><span>Beam UID Batch List</span></div>
+          <div class="dsi-field full">
+            <label>Beam UIDs (one per line) <span class="req">*</span></label>
+            <textarea id="f-uids" rows="5" placeholder="RF1(12)&#10;RF2 x 8&#10;RF7(20)"></textarea>
+            <div class="dsi-batch-hint">Per-entry format: <code>RF1(12)</code> or <code>RF1 x 12</code> or just <code>RF1</code> (defaults to 1). Separators between entries: newline, comma, semicolon.</div>
+            <div class="dsi-batch-preview empty" id="f-preview">
+              <div class="dsi-batch-totals">
+                <span>Parsed batch preview</span>
+                <span><span class="dsi-batch-total-num" id="f-total">0</span> &nbsp;units across <span id="f-lines">0</span> UID groups</span>
+              </div>
+              <div class="dsi-batch-chips" id="f-chips"></div>
+            </div>
+          </div>
+
+          <div class="dsi-divider"><span>Status &amp; Operator</span></div>
           <div class="dsi-field">
             <label>Loading Status <span class="req">*</span></label>
             <select id="f-status">
               <option value="" disabled selected>Select status…</option>
+              <option>Pending</option>
               <option>Loaded</option>
-              <option>Partial</option>
-              <option>On Hold</option>
-              <option>Dispatched</option>
+              <option>Returned</option>
+              <option>Delivered</option>
             </select>
           </div>
-          <div class="dsi-field"><label>Loading Date <span class="req">*</span></label><input type="date" id="f-date"/></div>
           <div class="dsi-field"><label>Loaded By <span class="req">*</span></label><input type="text" id="f-by" placeholder="Your full name"/></div>
-          <div class="dsi-field"><label>Destination <span class="req">*</span></label><input type="text" id="f-dest" placeholder="e.g. Site B, Riyadh"/></div>
 
           <div class="dsi-field full"><label>Notes / Remarks</label><textarea id="f-notes" placeholder="Any handling notes, escort details, etc."></textarea></div>
 
           <div class="dsi-field full">
-            <label>Image Attachment</label>
+            <label>Proof Image (optional)</label>
             <div id="img-drop" class="dsi-drop">
               <div class="di">📎</div>
               <div class="dh">Click or drag image here</div>
@@ -95,7 +109,7 @@
       </div>
       <div class="dsi-card-foot">
         <span class="dsi-req-note">* Required fields</span>
-        <button class="dsi-submit" id="submitBtn"><div class="dsi-spinner"></div><span>Submit Record</span></button>
+        <button class="dsi-submit" id="submitBtn"><div class="dsi-spinner"></div><span class="sl">Submit Batch</span></button>
       </div>
     </div>
 
@@ -103,122 +117,198 @@
       <div class="dsi-info">
         <h4>🚛 Loading Status</h4>
         <ul>
-          <li><strong style="color:#3fb950">Loaded</strong>&nbsp;— Truck fully loaded, awaiting dispatch</li>
-          <li><strong style="color:#e39b37">Partial</strong>&nbsp;— Partial load, more pieces to follow</li>
-          <li><strong style="color:#e39b37">On Hold</strong>&nbsp;— Awaiting clearance or paperwork</li>
-          <li><strong style="color:#3fb950">Dispatched</strong>&nbsp;— Vehicle departed site</li>
+          <li><strong style="color:#e39b37">Pending</strong>&nbsp;— Awaiting clearance / paperwork</li>
+          <li><strong style="color:#58a6ff">Loaded</strong>&nbsp;— Truck fully loaded, awaiting dispatch</li>
+          <li><strong style="color:#f85149">Returned</strong>&nbsp;— Truck returned to yard (rejected / aborted)</li>
+          <li><strong style="color:#3fb950">Delivered</strong>&nbsp;— Successfully delivered to site</li>
         </ul>
       </div>
       <div class="dsi-info">
-        <h4>📋 Reminder</h4>
-        <p>Record one row per truck/load event. If the same beam is split across vehicles, log each portion separately.</p>
+        <h4>📋 Batch Entry Tips</h4>
+        <p>Type each Beam UID followed by the quantity. Mix and match formats:</p>
+        <p style="font-family:'Barlow',monospace;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:#e6edf3;font-size:.85rem;line-height:1.7">RF1(12)<br/>RF2 x 8<br/>RF7(20)</p>
+        <p>The parser will expand to <strong>40 units</strong> across <strong>3 UID groups</strong>.</p>
       </div>
     </div>
 
   </div>
 
   <div>
-    <div class="dsi-table-head"><h3>Session Submissions</h3><span class="dsi-count" id="rcnt">0 Records</span></div>
+    <div class="dsi-table-head"><h3>Session Batches</h3><span class="dsi-count" id="rcnt">0 Batches</span></div>
     <div class="dsi-table-wrap">
       <table class="dsi-tbl">
         <thead>
-          <tr><th>Project</th><th>Loading ID</th><th>Beam UID</th><th>Truck #</th><th>Pieces</th><th>Status</th><th>Loaded By</th><th>Destination</th><th>Date</th></tr>
+          <tr><th>Batch ID</th><th>Project</th><th>Vehicle</th><th>Destination</th><th>UID Groups</th><th>Units</th><th>Status</th><th>Loaded By</th><th>Date</th></tr>
         </thead>
-        <tbody id="tbl"><tr><td colspan="9" class="dsi-empty">No submissions yet — fill in the form above.</td></tr></tbody>
+        <tbody id="tbl"><tr><td colspan="9" class="dsi-empty">No batches yet — submit one above to start the session log.</td></tr></tbody>
       </table>
     </div>
   </div>
 
 </main>
 
-<footer class="dsi-footer">&copy; 2025 Dalal Steel Industries &nbsp;·&nbsp; Loading &amp; Dispatch &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
+<footer class="dsi-footer">&copy; 2026 Dalal Steel Industries &nbsp;·&nbsp; Loading &amp; Dispatch &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
 <div id="dsi-toast" class="dsi-toast"></div>
 
 <script src="/assets/portal.js"></script>
 <script>
 (function(){
   const SECTION = 'loading';
-  document.getElementById('f-date').valueAsDate = new Date();
 
-  // Project dropdown + badge
-  let projects = [];
-  DSI.loadProjects().then(list => {
-    projects = list;
-    DSI.populateProjectSelect(document.getElementById('f-proj'), list);
-  });
+  // Default to now in the local <input type="datetime-local">.
+  (function initDate(){
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('f-date').value =
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  })();
+
+  // Project dropdown
+  DSI.loadProjects().then(list => DSI.populateProjectSelect(document.getElementById('f-proj'), list));
   document.getElementById('f-proj').addEventListener('change', e => {
     document.getElementById('f-pbadge').style.display = e.target.value ? 'inline-flex' : 'none';
   });
 
-  // Image upload
+  // Auto-generate batch ID
+  document.getElementById('f-bid').value = DSI.genBatchId('LD');
+
+  // Image upload binding (preview only — actual upload happens at submit time)
   DSI.bindImageUpload({ dropId:'img-drop', inputId:'img-input', previewId:'img-preview', thumbId:'img-thumb', nameId:'img-name' });
 
-  // Render
+  // Live batch preview
+  const uidsEl = document.getElementById('f-uids');
+  const previewEl = document.getElementById('f-preview');
+  const chipsEl = document.getElementById('f-chips');
+  const totalEl = document.getElementById('f-total');
+  const linesEl = document.getElementById('f-lines');
+  function refreshPreview(){
+    const { items, totalQty, errors } = DSI.parseBatch(uidsEl.value);
+    totalEl.textContent = totalQty;
+    linesEl.textContent = items.length;
+    chipsEl.innerHTML = '';
+    items.forEach(it => {
+      const span = document.createElement('span');
+      span.className = 'dsi-batch-chip';
+      span.innerHTML = DSI.esc(it.uid) + ' <span class="qty">×' + it.qty + '</span>';
+      chipsEl.appendChild(span);
+    });
+    errors.forEach(err => {
+      const span = document.createElement('span');
+      span.className = 'dsi-batch-err';
+      span.textContent = '⚠ Line ' + err.line + ': ' + err.text;
+      chipsEl.appendChild(span);
+    });
+    previewEl.classList.toggle('empty', !items.length && !errors.length);
+  }
+  uidsEl.addEventListener('input', refreshPreview);
+  refreshPreview();
+
+  // Render the session log
   function render(){
     const rows = DSI.readRows(SECTION);
-    document.getElementById('rcnt').textContent = rows.length + ' Record' + (rows.length !== 1 ? 's' : '');
+    const rc = document.getElementById('rcnt');
+    rc.textContent = rows.length + ' Batch' + (rows.length !== 1 ? 'es' : '');
     const tbl = document.getElementById('tbl');
-    if (!rows.length) { tbl.innerHTML = '<tr><td colspan="9" class="dsi-empty">No submissions yet — fill in the form above.</td></tr>'; }
-    else {
+    if (!rows.length) {
+      tbl.innerHTML = '<tr><td colspan="9" class="dsi-empty">No batches yet — submit one above to start the session log.</td></tr>';
+    } else {
       tbl.innerHTML = rows.map(r =>
         '<tr>' +
-          '<td><span class="dsi-pill">' + DSI.esc(r.projectNumber) + '</span></td>' +
-          '<td>' + DSI.esc(r.id) + '</td>' +
-          '<td>' + DSI.esc(r.beamUid) + '</td>' +
-          '<td>' + DSI.esc(r.truck) + '</td>' +
-          '<td>' + DSI.esc(r.pieces) + '</td>' +
+          '<td><span class="dsi-pill">' + DSI.esc(r.batchId) + '</span></td>' +
+          '<td>' + DSI.esc(r.project) + '</td>' +
+          '<td>' + DSI.esc(r.vehicle) + '</td>' +
+          '<td>' + DSI.esc(r.destination) + '</td>' +
+          '<td>' + DSI.esc(r.itemCount) + '</td>' +
+          '<td>' + DSI.esc(r.totalQty) + '</td>' +
           '<td><span class="dsi-tag ' + DSI.statusClass(r.status) + '">' + DSI.esc(r.status) + '</span></td>' +
           '<td>' + DSI.esc(r.loadedBy) + '</td>' +
-          '<td>' + DSI.esc(r.destination) + '</td>' +
-          '<td class="muted">' + DSI.esc(r.date) + '</td>' +
+          '<td class="muted">' + DSI.esc(DSI.shortTime(r.loadingDate)) + '</td>' +
         '</tr>'
       ).join('');
     }
-    const counts = { Loaded:0, Partial:0, 'On Hold':0, Dispatched:0 };
-    rows.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
-    document.getElementById('stTotal').textContent = rows.length;
-    document.getElementById('stDispatched').textContent = counts.Dispatched;
-    document.getElementById('stPartial').textContent = counts.Partial;
-    document.getElementById('stHold').textContent = counts['On Hold'];
+    const todayBatches = rows.length;
+    const delivered = rows.filter(r => r.status === 'Delivered').length;
+    const pendingOrLoaded = rows.filter(r => r.status === 'Pending' || r.status === 'Loaded').length;
+    const units = rows.reduce((s, r) => s + (Number(r.totalQty) || 0), 0);
+    document.getElementById('stBatches').textContent = todayBatches;
+    document.getElementById('stDelivered').textContent = delivered;
+    document.getElementById('stPending').textContent = pendingOrLoaded;
+    document.getElementById('stUnits').textContent = units;
   }
   render();
 
   // Submit
-  document.getElementById('submitBtn').addEventListener('click', () => {
-    const proj = document.getElementById('f-proj').value;
-    const id = document.getElementById('f-id').value.trim();
-    const uid = document.getElementById('f-uid').value.trim();
-    const truck = document.getElementById('f-truck').value.trim();
-    const pieces = document.getElementById('f-pieces').value;
-    const status = document.getElementById('f-status').value;
-    const date = document.getElementById('f-date').value;
-    const by = document.getElementById('f-by').value.trim();
-    const dest = document.getElementById('f-dest').value.trim();
-    const notes = document.getElementById('f-notes').value.trim();
-    if (!proj) return DSI.toast('Please select a project number', 'error');
-    if (!id || !uid || !truck || !pieces || !status || !date || !by || !dest)
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.addEventListener('click', async () => {
+    const payload = {
+      batchId:     document.getElementById('f-bid').value.trim(),
+      project:     document.getElementById('f-proj').value,
+      vehicle:     document.getElementById('f-truck').value.trim(),
+      destination: document.getElementById('f-dest').value.trim(),
+      beamUidsRaw: document.getElementById('f-uids').value.trim(),
+      status:      document.getElementById('f-status').value,
+      loadedBy:    document.getElementById('f-by').value.trim(),
+      loadingDate: document.getElementById('f-date').value,
+      notes:       document.getElementById('f-notes').value.trim()
+    };
+    if (!payload.project) return DSI.toast('Please select a project number', 'error');
+    if (!payload.batchId || !payload.vehicle || !payload.destination || !payload.beamUidsRaw || !payload.status || !payload.loadedBy || !payload.loadingDate)
       return DSI.toast('Please fill in all required fields', 'error');
-    const imgInput = document.getElementById('img-input');
-    const imageName = imgInput.files && imgInput.files[0] ? imgInput.files[0].name : '';
-    DSI.addRow(SECTION, {
-      id, projectNumber: proj, beamUid: uid, truck, pieces: Number(pieces),
-      status, date, loadedBy: by, destination: dest, notes, imageName,
-      timestamp: new Date().toISOString()
-    });
-    DSI.toast('✓ Loading record submitted', 'success');
-    resetForm();
-    render();
+
+    const parsed = DSI.parseBatch(payload.beamUidsRaw);
+    if (!parsed.items.length) return DSI.toast('No valid Beam UIDs in the batch entry', 'error');
+    if (parsed.errors.length) return DSI.toast('Fix the highlighted lines before submitting', 'error');
+
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    submitBtn.querySelector('.sl').textContent = 'Submitting…';
+    try {
+      const imgInput = document.getElementById('img-input');
+      if (imgInput.files && imgInput.files[0]) {
+        submitBtn.querySelector('.sl').textContent = 'Uploading image…';
+        payload.imageUrl = await DSI.uploadImage(imgInput.files[0]);
+      }
+      submitBtn.querySelector('.sl').textContent = 'Saving to Airtable…';
+      const resp = await DSI.postJson('/api/loading', payload);
+      DSI.addRow(SECTION, {
+        batchId:     payload.batchId,
+        project:     payload.project,
+        vehicle:     payload.vehicle,
+        destination: payload.destination,
+        itemCount:   resp.itemCount,
+        totalQty:    resp.totalQty,
+        status:      payload.status,
+        loadedBy:    payload.loadedBy,
+        loadingDate: payload.loadingDate,
+        recordId:    resp.id,
+        timestamp:   new Date().toISOString()
+      });
+      DSI.toast('✓ Batch ' + payload.batchId + ' saved (' + resp.totalQty + ' units)', 'success');
+      resetForm();
+      render();
+    } catch (err) {
+      DSI.toast('✗ ' + (err.message || 'Submission failed'), 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('loading');
+      submitBtn.querySelector('.sl').textContent = 'Submit Batch';
+    }
   });
 
   function resetForm(){
-    ['f-id','f-uid','f-truck','f-pieces','f-by','f-dest','f-notes'].forEach(i => document.getElementById(i).value = '');
+    ['f-truck','f-dest','f-uids','f-by','f-notes'].forEach(i => document.getElementById(i).value = '');
     document.getElementById('f-status').selectedIndex = 0;
     document.getElementById('f-proj').selectedIndex = 0;
     document.getElementById('f-pbadge').style.display = 'none';
-    document.getElementById('f-date').valueAsDate = new Date();
+    document.getElementById('f-bid').value = DSI.genBatchId('LD');
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    document.getElementById('f-date').value =
+      `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     document.getElementById('img-input').value = '';
     document.getElementById('img-preview').style.display = 'none';
     document.getElementById('img-drop').style.display = 'block';
+    refreshPreview();
   }
 })();
 </script>

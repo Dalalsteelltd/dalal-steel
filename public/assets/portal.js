@@ -164,10 +164,132 @@
   function statusClass(status) {
     if (!status) return 'neutral';
     const s = String(status).toLowerCase();
-    if (/(accepted|completed|dispatched|loaded)\b/.test(s) && !/partial/.test(s)) return 'ok';
-    if (/(rejected|failed)\b/.test(s)) return 'err';
-    if (/(reworked|partial|on hold|in progress|re-coated|recoated|touch-up)/.test(s)) return 'warn';
+    if (/^(accepted|completed|delivered|dispatched)$/.test(s)) return 'ok';
+    if (/^(loaded)$/.test(s)) return 'info';
+    if (/^(rejected|failed|returned|rework)$/.test(s)) return 'err';
+    if (/^(reworked|pending|partial|on hold|in progress|not started|re-coated|recoated|touch-up)$/.test(s)) return 'warn';
+    if (/completed|delivered|dispatched|accepted/.test(s) && !/partial/.test(s)) return 'ok';
+    if (/loaded/.test(s)) return 'info';
+    if (/rejected|failed|returned|rework/.test(s)) return 'err';
+    if (/reworked|pending|partial|on hold|in progress|not started/.test(s)) return 'warn';
     return 'neutral';
+  }
+
+  // ─── Batch parser ─────────────────────────────────────────────────────────
+  // Accepts a multi-line worker entry and returns a normalised list.
+  // Supported per-line formats:
+  //   RF1(12)         RF1 (12)         RF1 [12]
+  //   RF1 x 12        RF1 X 12         RF1*12
+  //   RF1, 12         RF1 - 12
+  //   RF1             (defaults qty=1)
+  // Commas, semicolons, and newlines all separate entries. Whitespace and
+  // empty lines are ignored. A bare quantity number after a UID (eg "RF1 12")
+  // is also accepted.
+  function parseBatch(text) {
+    const items = [];
+    const errors = [];
+    if (!text || typeof text !== 'string') {
+      return { items, totalQty: 0, errors };
+    }
+    // Normalise separators: comma, semicolon, newline → newline.
+    const lines = text.replace(/[;]/g, ',')
+                      .split(/[\r\n]+/)
+                      .flatMap(l => l.split(/,(?![^()]*\))/)) // split on commas not inside ()
+                      .map(s => s.trim())
+                      .filter(Boolean);
+
+    // Regex covers all the accepted shapes; quantity defaults to 1.
+    const re = /^([A-Za-z0-9][A-Za-z0-9_\-./]*)\s*(?:[\(\[]\s*(\d+)\s*[\)\]]|\s*[x\*]\s*(\d+)|\s*[-]\s*(\d+)|\s+(\d+))?$/i;
+
+    lines.forEach((line, idx) => {
+      const m = line.match(re);
+      if (!m) { errors.push({ line: idx + 1, text: line, reason: 'unrecognised format' }); return; }
+      const uid = m[1].toUpperCase();
+      const qtyRaw = m[2] || m[3] || m[4] || m[5];
+      const qty = qtyRaw ? parseInt(qtyRaw, 10) : 1;
+      if (!Number.isFinite(qty) || qty < 1 || qty > 9999) {
+        errors.push({ line: idx + 1, text: line, reason: 'quantity must be 1–9999' });
+        return;
+      }
+      items.push({ uid, qty });
+    });
+
+    const totalQty = items.reduce((s, it) => s + it.qty, 0);
+    return { items, totalQty, errors };
+  }
+
+  // Serialise a parsed batch back into a canonical multi-line "UID x QTY" form
+  // for storage in the "Parsed UIDs" Airtable column.
+  function serialiseBatch(items) {
+    if (!Array.isArray(items)) return '';
+    return items.map(it => `${it.uid} x ${it.qty}`).join('\n');
+  }
+
+  // ─── JSON helper ──────────────────────────────────────────────────────────
+  async function postJson(url, body) {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* ignore */ }
+    if (!res.ok) {
+      const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+    return data;
+  }
+
+  async function getJson(url) {
+    const res = await fetch(url, { cache: 'no-store' });
+    let data = null;
+    try { data = await res.json(); } catch (e) { /* ignore */ }
+    if (!res.ok) {
+      const msg = (data && (data.error || data.message)) || `HTTP ${res.status}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      err.body = data;
+      throw err;
+    }
+    return data;
+  }
+
+  // ─── Cloudinary unsigned upload (same preset used by the QC page) ────────
+  const CLOUDINARY_CLOUD = 'dfex176he';
+  const CLOUDINARY_PRESET = 'umwnwbli';
+  function uploadImage(file) {
+    return new Promise(function (resolve, reject) {
+      if (!file) return resolve(null);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('upload_preset', CLOUDINARY_PRESET);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://api.cloudinary.com/v1_1/' + CLOUDINARY_CLOUD + '/image/upload');
+      xhr.timeout = 30000;
+      xhr.onload = function () {
+        if (xhr.status === 200) {
+          try { resolve(JSON.parse(xhr.responseText).secure_url); }
+          catch (e) { reject(new Error('Image upload returned invalid JSON')); }
+        } else { reject(new Error('Image upload failed: ' + xhr.status)); }
+      };
+      xhr.onerror = function () { reject(new Error('Image upload network error')); };
+      xhr.ontimeout = function () { reject(new Error('Image upload timed out — try a smaller image')); };
+      xhr.send(form);
+    });
+  }
+
+  // Generate a date-based batch id, e.g. LD-20260520-XKJ4
+  function genBatchId(prefix) {
+    const d = new Date();
+    const ymd = d.getFullYear().toString() +
+                String(d.getMonth() + 1).padStart(2, '0') +
+                String(d.getDate()).padStart(2, '0');
+    const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return `${prefix}-${ymd}-${rand}`;
   }
 
   function formatDate(d) {
@@ -202,6 +324,13 @@
     formatDate,
     genId,
     shortTime,
-    STORE_KEYS
+    STORE_KEYS,
+    // batch + server helpers
+    parseBatch,
+    serialiseBatch,
+    postJson,
+    getJson,
+    uploadImage,
+    genBatchId
   };
 })(window);

@@ -6,16 +6,18 @@
 <title>Manager Dashboard — Dalal Steel Industries</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/portal.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 </head>
 <body class="accent-violet">
 
 <header class="dsi-header">
   <div class="dsi-brand">
     <div class="dsi-logo"><img src="https://cdn.prod.website-files.com/642d748a11520d3a83eb2715/646a10def01604a84f90b302_Asset%201.svg" alt="DSI" onerror="this.style.display='none'"/></div>
-    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Manager Dashboard</span></div>
+    <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Manager Dashboard — Live Operations</span></div>
   </div>
   <div class="dsi-header-right">
-    <span class="dsi-badge">📊 Overview</span>
+    <span class="dsi-badge" id="dsi-updated">Updated —</span>
+    <button class="dsi-back" id="dsi-refresh" type="button" style="cursor:pointer">↻ Refresh</button>
     <a href="/" class="dsi-back">← Home</a>
     <button class="dsi-back" id="dsi-signout" type="button" style="cursor:pointer">Sign out</button>
   </div>
@@ -25,7 +27,7 @@
   <div class="dsi-hero-inner">
     <div>
       <h2>Operations <em>Overview</em></h2>
-      <p>Cross-department submissions with one-click access to the linked Airtable or Excel records.</p>
+      <p>Real-time cross-department production KPIs aggregated from QC inspections, Loading batches and Painting batches.</p>
       <p class="dsi-motto">&ldquo;Pain is only but a fuel.&rdquo;</p>
     </div>
   </div>
@@ -42,219 +44,299 @@
 
 <main class="dsi-main accent-violet">
 
-  <div class="dsi-dash-summary">
-    <div class="dsi-stat"><div class="dsi-stat-icon v">📋</div><div><div class="dsi-stat-value" id="sumAll">0</div><div class="dsi-stat-label">Total Submissions</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon g">✅</div><div><div class="dsi-stat-value" id="sumOk">0</div><div class="dsi-stat-label">Accepted / Completed</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon y">⚠️</div><div><div class="dsi-stat-value" id="sumWarn">0</div><div class="dsi-stat-label">Partial / Rework / On Hold</div></div></div>
-    <div class="dsi-stat"><div class="dsi-stat-icon r">❌</div><div><div class="dsi-stat-value" id="sumErr">0</div><div class="dsi-stat-label">Rejected / Failed</div></div></div>
+  <!-- KPI strip -->
+  <div class="dsi-kpi-grid">
+    <div class="dsi-kpi kp-blue"><div class="dsi-kpi-value" id="kpiTotal">0</div><div class="dsi-kpi-label">Total Beams (QC)</div><div class="dsi-kpi-sub">across all projects</div></div>
+    <div class="dsi-kpi kp-green"><div class="dsi-kpi-value" id="kpiPassed">0</div><div class="dsi-kpi-label">Passed QC</div><div class="dsi-kpi-sub" id="kpiPassedPct">—</div></div>
+    <div class="dsi-kpi kp-red"><div class="dsi-kpi-value" id="kpiFailed">0</div><div class="dsi-kpi-label">Failed QC</div><div class="dsi-kpi-sub" id="kpiReworked">— reworked</div></div>
+    <div class="dsi-kpi kp-yellow"><div class="dsi-kpi-value" id="kpiLoaded">0</div><div class="dsi-kpi-label">Total Loaded</div><div class="dsi-kpi-sub" id="kpiLoadingBatches">— batches</div></div>
+    <div class="dsi-kpi kp-teal"><div class="dsi-kpi-value" id="kpiDelivered">0</div><div class="dsi-kpi-label">Delivered</div><div class="dsi-kpi-sub" id="kpiPending">— pending</div></div>
+    <div class="dsi-kpi kp-violet"><div class="dsi-kpi-value" id="kpiPainted">0</div><div class="dsi-kpi-label">Total Painted</div><div class="dsi-kpi-sub" id="kpiPaintBatches">— batches</div></div>
   </div>
 
-  <div class="dsi-filterbar">
-    <div class="dsi-field">
-      <label>Department</label>
-      <select id="fDept">
-        <option value="">All departments</option>
-        <option value="loading">Loading</option>
-        <option value="painting">Painting</option>
-        <option value="welding">Robotic Welding</option>
-      </select>
+  <!-- Charts -->
+  <div class="dsi-charts-row">
+    <div class="dsi-chart-card">
+      <h4>📦 Loading status distribution</h4>
+      <canvas id="chLoading" height="220"></canvas>
     </div>
-    <div class="dsi-field">
-      <label>Project Number</label>
-      <select id="fProj"><option value="">All projects</option></select>
+    <div class="dsi-chart-card">
+      <h4>🎨 Painting coating status</h4>
+      <canvas id="chPainting" height="220"></canvas>
     </div>
-    <div class="dsi-field">
-      <label>Status</label>
-      <select id="fStatus">
-        <option value="">All statuses</option>
-        <option value="ok">Accepted / Completed / Dispatched</option>
-        <option value="warn">Partial / Re-worked / On Hold / In Progress</option>
-        <option value="err">Rejected / Failed</option>
-      </select>
-    </div>
-    <div class="dsi-field">
-      <label>From — To</label>
-      <div style="display:flex;gap:6px"><input type="date" id="fFrom"/><input type="date" id="fTo"/></div>
-    </div>
-    <button id="fReset">Reset</button>
   </div>
 
+  <!-- Beam Search (Master Tracking Engine) -->
+  <div class="dsi-search-card">
+    <div class="dsi-card-head" style="border-bottom:1px solid var(--border);padding:0 0 12px;margin-bottom:14px;background:transparent">
+      <div class="dsi-card-head-icon">🔎</div>
+      <div><h3 style="font-family:'Barlow Condensed',sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#fff">Beam Tracker — Master Search</h3><p style="font-size:.72rem;color:var(--muted);margin-top:1px">Find a Beam UID across QC, Loading and Painting batches.</p></div>
+    </div>
+    <div class="dsi-search-row">
+      <div class="dsi-field">
+        <label>Beam UID</label>
+        <input type="text" id="sUid" placeholder="e.g. RF1 or BM-4412-A"/>
+      </div>
+      <div class="dsi-field">
+        <label>Project (optional)</label>
+        <select id="sProj"><option value="">All projects</option></select>
+      </div>
+      <button id="sGo">Track →</button>
+    </div>
+    <div class="dsi-search-result" id="sResult"></div>
+  </div>
+
+  <!-- Per-project rollup -->
+  <div class="dsi-chart-card" style="margin-bottom:22px">
+    <h4>🏗️ Per-project rollup</h4>
+    <div class="dsi-project-table">
+      <table>
+        <thead>
+          <tr><th>Project</th><th>QC Records</th><th>Passed</th><th>Failed</th><th>Loaded</th><th>Painted</th><th>Progress</th></tr>
+        </thead>
+        <tbody id="projTbody"><tr><td colspan="7" class="dsi-empty">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent batches -->
   <div class="dsi-dash-grid">
-
-    <div class="dsi-dash-card dept-qc" id="card-qc">
-      <div class="dsi-dash-head">
-        <div class="dsi-dash-title"><span class="dot"></span>QC Inspection</div>
-        <div class="dsi-dash-badges">
-          <span class="dsi-tag neutral" id="qc-count">0</span>
-          <a class="dsi-tag info" href="/qc" style="text-decoration:none">Open →</a>
-        </div>
-      </div>
-      <div class="dsi-dash-body" id="body-qc">
-        <div class="dsi-dash-empty">QC records live on the QC page. Open it to view inspection submissions.</div>
-      </div>
-    </div>
-
     <div class="dsi-dash-card dept-load" id="card-loading">
       <div class="dsi-dash-head">
-        <div class="dsi-dash-title"><span class="dot"></span>Loading Team</div>
+        <div class="dsi-dash-title"><span class="dot"></span>Recent Loading Batches</div>
         <div class="dsi-dash-badges"><span class="dsi-tag neutral" id="loading-count">0</span></div>
       </div>
       <div class="dsi-dash-body" id="body-loading"></div>
     </div>
-
     <div class="dsi-dash-card dept-paint" id="card-painting">
       <div class="dsi-dash-head">
-        <div class="dsi-dash-title"><span class="dot"></span>Painting &amp; Finishing</div>
+        <div class="dsi-dash-title"><span class="dot"></span>Recent Painting Batches</div>
         <div class="dsi-dash-badges"><span class="dsi-tag neutral" id="painting-count">0</span></div>
       </div>
       <div class="dsi-dash-body" id="body-painting"></div>
     </div>
-
-    <div class="dsi-dash-card dept-weld" id="card-welding">
-      <div class="dsi-dash-head">
-        <div class="dsi-dash-title"><span class="dot"></span>Robotic Welding</div>
-        <div class="dsi-dash-badges"><span class="dsi-tag neutral" id="welding-count">0</span></div>
-      </div>
-      <div class="dsi-dash-body" id="body-welding"></div>
-    </div>
-
   </div>
 
-  <div class="dsi-dash-info">Click any submission ID to open the linked Airtable record or Excel sheet for that project.</div>
+  <div class="dsi-dash-info" id="liveInfo">Data refreshes when you hit Refresh, or auto-refreshes every 60 seconds while the tab is focused.</div>
 
 </main>
 
-<footer class="dsi-footer">&copy; 2025 Dalal Steel Industries &nbsp;·&nbsp; Manager Dashboard &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
+<footer class="dsi-footer">&copy; 2026 Dalal Steel Industries &nbsp;·&nbsp; Manager Dashboard &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
 <div id="dsi-toast" class="dsi-toast"></div>
 
 <script src="/assets/portal.js"></script>
 <script>
 (function(){
+  // Sign-out
   const so = document.getElementById('dsi-signout');
   if (so) so.addEventListener('click', async () => {
-    try { await fetch('/api/dashboard-logout', { method: 'POST' }); } catch {}
+    try { await fetch('/api/dashboard-logout', { method: 'POST' }); } catch (e) {}
     window.location.replace('/dashboard/login');
   });
-})();
-</script>
-<script>
-(function(){
-  let projects = [];
-  let projectIndex = {};
 
-  function ctxFor(section, r){
-    if (section === 'loading')  return '<strong>' + DSI.esc(r.beamUid) + '</strong> · Truck ' + DSI.esc(r.truck) + ' · ' + DSI.esc(r.pieces) + ' pcs → ' + DSI.esc(r.destination);
-    if (section === 'painting') return '<strong>' + DSI.esc(r.beamUid) + '</strong> · ' + DSI.esc(r.coatingType) + ' · DFT ' + DSI.esc(r.dft) + ' μm · ' + DSI.esc(r.surfacePrep);
-    if (section === 'welding')  return '<strong>' + DSI.esc(r.beamUid) + '</strong> · ' + DSI.esc(r.cell) + ' · ' + DSI.esc(r.weldType) + ' / ' + DSI.esc(r.joint) + ' · Grade ' + DSI.esc(r.grade);
-    return '';
-  }
-  function statusFor(section, r){
-    return section === 'welding' ? r.result : r.status;
-  }
+  // Charts (created once, updated on each refresh)
+  const ctxLoading = document.getElementById('chLoading').getContext('2d');
+  const ctxPainting = document.getElementById('chPainting').getContext('2d');
+  Chart.defaults.color = '#7d8590';
+  Chart.defaults.font.family = 'Barlow,Helvetica,sans-serif';
 
-  function openLink(projectId){
-    const p = projectIndex[projectId];
-    if (!p) { DSI.toast('Project not found', 'error'); return; }
-    const url = p.airtableUrl || p.excelUrl;
-    if (!url) { DSI.toast('Link not configured for ' + projectId + ' yet', 'error'); return; }
-    window.open(url, '_blank', 'noopener,noreferrer');
-  }
+  const chLoading = new Chart(ctxLoading, {
+    type: 'bar',
+    data: { labels: ['Pending','Loaded','Returned','Delivered'],
+      datasets: [{ label: 'Batches', data: [0,0,0,0],
+        backgroundColor: ['#e39b37','#58a6ff','#f85149','#3fb950'],
+        borderRadius: 6 }] },
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 }, grid:{ color:'rgba(255,255,255,.05)' } },
+               x:{ grid:{ display:false } } } }
+  });
+  const chPainting = new Chart(ctxPainting, {
+    type: 'doughnut',
+    data: { labels: ['Not Started','In Progress','Completed','Rework'],
+      datasets: [{ data: [0,0,0,0],
+        backgroundColor: ['#7d8590','#e39b37','#3fb950','#f85149'],
+        borderWidth: 3, borderColor: '#0d1117', hoverOffset: 6 }] },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{ size:11 } } } } }
+  });
 
-  function matches(section, r){
-    const dept = document.getElementById('fDept').value;
-    const proj = document.getElementById('fProj').value;
-    const st = document.getElementById('fStatus').value;
-    const from = document.getElementById('fFrom').value;
-    const to = document.getElementById('fTo').value;
-    if (dept && dept !== section) return false;
-    if (proj && r.projectNumber !== proj) return false;
-    if (st) {
-      const cls = DSI.statusClass(statusFor(section, r));
-      if (cls !== st) return false;
-    }
-    if (from && r.date && r.date < from) return false;
-    if (to && r.date && r.date > to) return false;
-    return true;
+  function statusTag(status){
+    return '<span class="dsi-tag ' + DSI.statusClass(status) + '">' + DSI.esc(status || '—') + '</span>';
   }
 
-  function renderSection(section){
-    const all = DSI.readRows(section);
-    const rows = all.filter(r => matches(section, r));
-    const body = document.getElementById('body-' + section);
-    document.getElementById(section + '-count').textContent = rows.length;
-    if (!rows.length) {
-      body.innerHTML = '<div class="dsi-dash-empty">No matching submissions yet.</div>';
-      return;
-    }
-    body.innerHTML = rows.slice(0, 30).map(r => {
-      const status = statusFor(section, r);
-      return '<div class="dsi-dash-row">' +
-        '<button class="dsi-id-btn" data-proj="' + DSI.esc(r.projectNumber) + '" title="Open Airtable/Excel for ' + DSI.esc(r.projectNumber) + '">' +
-          DSI.esc(r.id) + ' ↗' +
-        '</button>' +
-        '<div class="dsi-dash-context">' + ctxFor(section, r) + '</div>' +
-        '<span class="dsi-tag ' + DSI.statusClass(status) + '">' + DSI.esc(status) + '</span>' +
-        '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.timestamp || r.date)) + '</span>' +
-      '</div>';
+  function renderRecentLoading(rows){
+    const body = document.getElementById('body-loading');
+    document.getElementById('loading-count').textContent = rows.length;
+    if (!rows.length) { body.innerHTML = '<div class="dsi-dash-empty">No loading batches yet.</div>'; return; }
+    body.innerHTML = rows.map(r =>
+      '<div class="dsi-dash-row">' +
+        '<button class="dsi-id-btn" title="Loading batch">' + DSI.esc(r.batchId || r.id) + '</button>' +
+        '<div class="dsi-dash-context"><strong>' + DSI.esc(r.project) + '</strong> · ' + DSI.esc(r.units) + ' units · Truck ' + DSI.esc(r.vehicle) + ' → ' + DSI.esc(r.destination) + '</div>' +
+        statusTag(r.status) +
+        '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.loadingDate)) + '</span>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderRecentPainting(rows){
+    const body = document.getElementById('body-painting');
+    document.getElementById('painting-count').textContent = rows.length;
+    if (!rows.length) { body.innerHTML = '<div class="dsi-dash-empty">No painting batches yet.</div>'; return; }
+    body.innerHTML = rows.map(r =>
+      '<div class="dsi-dash-row">' +
+        '<button class="dsi-id-btn" title="Paint batch">' + DSI.esc(r.batchId || r.id) + '</button>' +
+        '<div class="dsi-dash-context"><strong>' + DSI.esc(r.project) + '</strong> · ' + DSI.esc(r.quantityCompleted) + '/' + DSI.esc(r.totalQty) + ' done · ' + DSI.esc(r.paintSystem) + '</div>' +
+        statusTag(r.coatingStatus) +
+        '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.completionDate)) + '</span>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderProjectTable(perProject){
+    const body = document.getElementById('projTbody');
+    if (!perProject || !perProject.length) { body.innerHTML = '<tr><td colspan="7" class="dsi-empty">No project data.</td></tr>'; return; }
+    body.innerHTML = perProject.map(p => {
+      const done = (Number(p.accepted) || 0) + (Number(p.painted) || 0);
+      const total = Math.max((Number(p.qcCount) || 0), done);
+      const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+      return '<tr>' +
+        '<td><span class="dsi-pill">' + DSI.esc(p.project) + '</span></td>' +
+        '<td>' + DSI.esc(p.qcCount) + '</td>' +
+        '<td style="color:#3fb950">' + DSI.esc(p.accepted) + '</td>' +
+        '<td style="color:#f85149">' + DSI.esc(p.rejected) + '</td>' +
+        '<td>' + DSI.esc(p.loaded || 0) + '</td>' +
+        '<td>' + DSI.esc(p.painted || 0) + '</td>' +
+        '<td><div class="progressbar"><div class="fill" style="width:' + pct + '%"></div></div><span style="font-size:.72rem;color:var(--muted);margin-left:6px">' + pct + '%</span></td>' +
+      '</tr>';
     }).join('');
-    body.querySelectorAll('.dsi-id-btn').forEach(btn => {
-      btn.addEventListener('click', () => openLink(btn.dataset.proj));
-    });
   }
 
-  function renderSummary(){
-    const sections = ['loading','painting','welding'];
-    let total = 0, ok = 0, warn = 0, err = 0;
-    sections.forEach(s => {
-      const rows = DSI.readRows(s).filter(r => matches(s, r));
-      total += rows.length;
-      rows.forEach(r => {
-        const cls = DSI.statusClass(statusFor(s, r));
-        if (cls === 'ok') ok++;
-        else if (cls === 'warn') warn++;
-        else if (cls === 'err') err++;
-      });
-    });
-    document.getElementById('sumAll').textContent = total;
-    document.getElementById('sumOk').textContent = ok;
-    document.getElementById('sumWarn').textContent = warn;
-    document.getElementById('sumErr').textContent = err;
+  function setKpis(k){
+    document.getElementById('kpiTotal').textContent = k.totalBeams;
+    document.getElementById('kpiPassed').textContent = k.passedQc;
+    document.getElementById('kpiFailed').textContent = k.failedQc;
+    document.getElementById('kpiLoaded').textContent = k.totalLoaded;
+    document.getElementById('kpiDelivered').textContent = k.totalDelivered;
+    document.getElementById('kpiPainted').textContent = k.totalPainted;
+    const pct = k.totalBeams ? Math.round((k.passedQc / k.totalBeams) * 100) : 0;
+    document.getElementById('kpiPassedPct').textContent = pct + '% pass rate';
+    document.getElementById('kpiReworked').textContent = (k.reworkedQc || 0) + ' reworked';
+    document.getElementById('kpiLoadingBatches').textContent = (k.loadingBatches || 0) + ' batches';
+    document.getElementById('kpiPaintBatches').textContent = (k.paintingBatches || 0) + ' batches';
+    document.getElementById('kpiPending').textContent = (k.pendingComponents || 0) + ' pending';
   }
 
-  function renderAll(){
-    ['loading','painting','welding'].forEach(renderSection);
-    renderSummary();
+  async function refresh(){
+    const refreshBtn = document.getElementById('dsi-refresh');
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = '↻ Loading…';
+    try {
+      const data = await DSI.getJson('/api/dashboard-data');
+      setKpis(data.kpis);
+      chLoading.data.datasets[0].data = [
+        data.loadingByStatus.Pending,
+        data.loadingByStatus.Loaded,
+        data.loadingByStatus.Returned,
+        data.loadingByStatus.Delivered
+      ];
+      chLoading.update();
+      chPainting.data.datasets[0].data = [
+        data.paintingByCoating['Not Started'],
+        data.paintingByCoating['In Progress'],
+        data.paintingByCoating['Completed'],
+        data.paintingByCoating['Rework']
+      ];
+      chPainting.update();
+      renderRecentLoading(data.recent.loading);
+      renderRecentPainting(data.recent.painting);
+      renderProjectTable(data.perProject);
+      document.getElementById('dsi-updated').textContent = 'Updated ' + DSI.shortTime(data.generatedAt);
+    } catch (err) {
+      if (err.status === 401) {
+        window.location.replace('/dashboard/login');
+        return;
+      }
+      DSI.toast('✗ ' + (err.message || 'Failed to load dashboard'), 'error');
+    } finally {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = '↻ Refresh';
+    }
   }
 
-  // Load projects, populate filter
+  document.getElementById('dsi-refresh').addEventListener('click', refresh);
+
+  // Beam search
   DSI.loadProjects().then(list => {
-    projects = list;
-    projects.forEach(p => projectIndex[p.id] = p);
-    const fProj = document.getElementById('fProj');
+    const sel = document.getElementById('sProj');
     list.forEach(p => {
       const o = document.createElement('option');
       o.value = p.id; o.textContent = p.name || p.id;
-      fProj.appendChild(o);
+      sel.appendChild(o);
     });
-    renderAll();
   });
 
-  ['fDept','fProj','fStatus','fFrom','fTo'].forEach(id => {
-    document.getElementById(id).addEventListener('change', renderAll);
-  });
-  document.getElementById('fReset').addEventListener('click', () => {
-    document.getElementById('fDept').value = '';
-    document.getElementById('fProj').value = '';
-    document.getElementById('fStatus').value = '';
-    document.getElementById('fFrom').value = '';
-    document.getElementById('fTo').value = '';
-    renderAll();
-  });
+  function renderSearch(data){
+    const box = document.getElementById('sResult');
+    if (!data) { box.classList.remove('show'); box.innerHTML = ''; return; }
+    const s = data.summary;
+    box.classList.add('show');
+    box.innerHTML =
+      '<div class="dsi-search-summary">' +
+        '<strong>' + DSI.esc(data.uid) + '</strong>' +
+        '<span class="dsi-dash-ts">Current: ' + DSI.esc(s.currentDept) + ' / ' + DSI.esc(s.currentStatus || '—') + '</span>' +
+        '<div class="dsi-search-stages">' +
+          '<span class="dsi-tag info">QC: ' + s.qcCount + '</span>' +
+          '<span class="dsi-tag warn">Loading: ' + s.loadingCount + '</span>' +
+          '<span class="dsi-tag ' + (s.paintingCount?'ok':'neutral') + '">Painting: ' + s.paintingCount + '</span>' +
+        '</div>' +
+      '</div>' +
+      (data.qc.length ? (
+        '<div class="dsi-search-stage-title q">🔍 QC Inspections (' + data.qc.length + ')</div>' +
+        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Project</th><th>Inspection ID</th><th>Worktype</th><th>Result</th><th>Time</th></tr></thead><tbody>' +
+        data.qc.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.project) + '</span></td><td>' + DSI.esc(r.inspectionId) + '</td><td>' + DSI.esc(r.worktype) + '</td><td>' + statusTag(r.result) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.createdTime)) + '</td></tr>').join('') +
+        '</tbody></table></div>'
+      ) : '') +
+      (data.loading.length ? (
+        '<div class="dsi-search-stage-title l">🚛 Loading Batches (' + data.loading.length + ')</div>' +
+        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Batch ID</th><th>Project</th><th>Qty</th><th>Vehicle</th><th>Destination</th><th>Status</th><th>Date</th></tr></thead><tbody>' +
+        data.loading.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.batchId) + '</span></td><td>' + DSI.esc(r.project) + '</td><td>' + DSI.esc(r.qty) + '</td><td>' + DSI.esc(r.vehicle) + '</td><td>' + DSI.esc(r.destination) + '</td><td>' + statusTag(r.status) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.loadingDate)) + '</td></tr>').join('') +
+        '</tbody></table></div>'
+      ) : '') +
+      (data.painting.length ? (
+        '<div class="dsi-search-stage-title p">🎨 Painting Batches (' + data.painting.length + ')</div>' +
+        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Batch ID</th><th>Project</th><th>Qty</th><th>Paint System</th><th>Prep</th><th>Coating</th><th>Date</th></tr></thead><tbody>' +
+        data.painting.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.batchId) + '</span></td><td>' + DSI.esc(r.project) + '</td><td>' + DSI.esc(r.qty) + '</td><td>' + DSI.esc(r.paintSystem) + '</td><td>' + statusTag(r.surfacePrepStatus) + '</td><td>' + statusTag(r.coatingStatus) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.completionDate)) + '</td></tr>').join('') +
+        '</tbody></table></div>'
+      ) : '') +
+      (!data.qc.length && !data.loading.length && !data.painting.length ?
+        '<div class="dsi-dash-empty" style="padding:16px">No records found for that UID.</div>' : '');
+  }
 
-  // Live refresh when another tab writes to localStorage
-  window.addEventListener('storage', e => {
-    if (e.key && e.key.startsWith('dsi_rows_')) renderAll();
-  });
+  async function doSearch(){
+    const uid = document.getElementById('sUid').value.trim();
+    const proj = document.getElementById('sProj').value;
+    if (!uid) return DSI.toast('Enter a Beam UID to search', 'error');
+    const goBtn = document.getElementById('sGo');
+    goBtn.disabled = true; goBtn.textContent = 'Searching…';
+    try {
+      const qs = new URLSearchParams({ uid });
+      if (proj) qs.set('project', proj);
+      const data = await DSI.getJson('/api/search-beam?' + qs.toString());
+      renderSearch(data);
+    } catch (err) {
+      if (err.status === 401) { window.location.replace('/dashboard/login'); return; }
+      DSI.toast('✗ ' + (err.message || 'Search failed'), 'error');
+    } finally {
+      goBtn.disabled = false; goBtn.textContent = 'Track →';
+    }
+  }
+  document.getElementById('sGo').addEventListener('click', doSearch);
+  document.getElementById('sUid').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+  // Initial load + auto refresh every 60s when visible
+  refresh();
+  setInterval(() => { if (!document.hidden) refresh(); }, 60_000);
 })();
 </script>
 
