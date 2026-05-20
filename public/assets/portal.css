@@ -511,7 +511,8 @@ body.landing .dept-mgr  .dsi-dept-icon{box-shadow:0 0 0 1px rgba(163,130,255,.28
   max-width:540px;
   text-shadow:0 1px 8px rgba(163,130,255,.14);
 }
-.dsi-quote p{margin:0}
+.dsi-quote p{margin:0;transition:opacity .45s ease, transform .45s ease;will-change:opacity}
+.dsi-quote p.is-fading{opacity:0;transform:translateY(-3px)}
 .dsi-quote-rule{
   margin:12px auto 0;width:34px;height:1px;
   background:linear-gradient(90deg,transparent,rgba(163,130,255,.45),transparent);

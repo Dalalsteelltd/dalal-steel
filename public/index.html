@@ -28,7 +28,7 @@
   <div class="dsi-quote-inner">
     <span class="dsi-quote-mark dsi-quote-mark-open" aria-hidden="true">&ldquo;</span>
     <blockquote class="dsi-quote">
-      <p>Life itself is only but a dream &mdash; only a sleeper considers it real. Then death comes like dawn, and you wake up laughing at what you considered your grief.</p>
+      <p id="dsi-quote-text">Every failure is undocumented intelligence until it is examined.</p>
     </blockquote>
     <span class="dsi-quote-mark dsi-quote-mark-close" aria-hidden="true">&rdquo;</span>
     <div class="dsi-quote-rule" aria-hidden="true"></div>
@@ -78,6 +78,79 @@
 </section>
 
 <footer class="dsi-footer">&copy; 2025 Dalal Steel Industries &nbsp;·&nbsp; Internal Operations Portal &nbsp;·&nbsp; ISO 9001:2015 &nbsp;·&nbsp; AWS D1.1 &nbsp;·&nbsp; EN 1090-2</footer>
+
+<script>
+(function(){
+  const QUOTES = [
+    "Every failure is undocumented intelligence until it is examined.",
+    "Black box thinking turns mistakes from liabilities into infrastructure.",
+    "Systems evolve when errors are studied, not hidden.",
+    "The costliest bug is the one nobody reports.",
+    "Progress belongs to organisations that can audit themselves without ego.",
+    "Failure is data with emotions attached.",
+    "A hidden error repeats. An exposed error upgrades the system.",
+    "Operational excellence is built on transparent postmortems.",
+    "Perfection is not the absence of mistakes; it is the speed of learning from them.",
+    "The strongest systems are designed by people willing to dissect their own failures.",
+    "Blame protects pride. Analysis protects the future.",
+    "Every incident contains a blueprint for a better process.",
+    "Organisations stagnate when failure becomes political.",
+    "A mature operation treats errors as signals, not scandals.",
+    "Black box thinking converts pain into precision.",
+    "The gap between average and elite teams is often the quality of their retrospectives.",
+    "If failure cannot be discussed, improvement becomes impossible.",
+    "Resilient systems are born from brutally honest feedback loops.",
+    "Behind every scalable operation is a culture that studies what went wrong.",
+    "Data without reflection is noise. Failure without analysis is waste.",
+    "Log everything. Learn continuously.",
+    "Errors are feedback.",
+    "Trace. Analyse. Improve.",
+    "Failure is part of the architecture.",
+    "No blame. Only iteration.",
+    "Every incident leaves a lesson trail.",
+    "Visibility creates reliability.",
+    "Systems remember what people ignore.",
+    "Retrospectives build resilience.",
+    "Optimisation begins after failure."
+  ];
+
+  const el = document.getElementById('dsi-quote-text');
+  if (!el) return;
+
+  // Fisher-Yates shuffle so each visit gives a fresh sequence,
+  // and consecutive quotes never repeat.
+  const order = QUOTES.slice();
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  let idx = 0;
+  el.textContent = order[idx];
+
+  const ROTATE_MS = 12000;
+  const FADE_MS = 450;
+
+  function next(){
+    idx = (idx + 1) % order.length;
+    el.classList.add('is-fading');
+    setTimeout(() => {
+      el.textContent = order[idx];
+      el.classList.remove('is-fading');
+    }, FADE_MS);
+  }
+
+  let timer = setInterval(() => { if (!document.hidden) next(); }, ROTATE_MS);
+
+  // Reset cadence after the tab regains focus so a long-hidden tab
+  // doesn't fire a burst of rotations.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      clearInterval(timer);
+      timer = setInterval(() => { if (!document.hidden) next(); }, ROTATE_MS);
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
