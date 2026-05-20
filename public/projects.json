@@ -1,16 +1,16 @@
 {
   "projects": [
-    { "id": "SPN004", "name": "SPN004", "airtableUrl": "", "excelUrl": "" },
-    { "id": "SPN062", "name": "SPN062", "airtableUrl": "", "excelUrl": "" },
-    { "id": "SPN003", "name": "SPN003", "airtableUrl": "", "excelUrl": "" },
-    { "id": "NG008",  "name": "NG008",  "airtableUrl": "", "excelUrl": "" },
-    { "id": "NG014",  "name": "NG014",  "airtableUrl": "", "excelUrl": "" },
-    { "id": "SBN025", "name": "SBN025", "airtableUrl": "", "excelUrl": "" },
-    { "id": "SBN005", "name": "SBN005", "airtableUrl": "", "excelUrl": "" },
-    { "id": "SBN002", "name": "SBN002", "airtableUrl": "", "excelUrl": "" },
-    { "id": "SBN022", "name": "SBN022", "airtableUrl": "", "excelUrl": "" },
-    { "id": "ST300",  "name": "ST300",  "airtableUrl": "", "excelUrl": "" },
-    { "id": "SBN013", "name": "SBN013", "airtableUrl": "", "excelUrl": "" },
-    { "id": "SPN023", "name": "SPN023", "airtableUrl": "", "excelUrl": "" }
+    { "id": "SPN004", "name": "SPN004" },
+    { "id": "SPN062", "name": "SPN062" },
+    { "id": "SPN003", "name": "SPN003" },
+    { "id": "NG008",  "name": "NG008"  },
+    { "id": "NG014",  "name": "NG014"  },
+    { "id": "SBN025", "name": "SBN025" },
+    { "id": "SBN005", "name": "SBN005" },
+    { "id": "SBN002", "name": "SBN002" },
+    { "id": "SBN022", "name": "SBN022" },
+    { "id": "ST300",  "name": "ST300"  },
+    { "id": "SBN013", "name": "SBN013" },
+    { "id": "SPN023", "name": "SPN023" }
   ]
 }

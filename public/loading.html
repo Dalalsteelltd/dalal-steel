@@ -268,7 +268,7 @@
         submitBtn.querySelector('.sl').textContent = 'Uploading image…';
         payload.imageUrl = await DSI.uploadImage(imgInput.files[0]);
       }
-      submitBtn.querySelector('.sl').textContent = 'Saving to Airtable…';
+      submitBtn.querySelector('.sl').textContent = 'Saving batch…';
       const resp = await DSI.postJson('/api/loading', payload);
       DSI.addRow(SECTION, {
         batchId:     payload.batchId,

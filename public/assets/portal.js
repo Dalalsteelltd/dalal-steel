@@ -43,8 +43,6 @@
       const o = document.createElement('option');
       o.value = p.id;
       o.textContent = p.name || p.id;
-      o.dataset.airtable = p.airtableUrl || '';
-      o.dataset.excel = p.excelUrl || '';
       select.appendChild(o);
     });
   }
@@ -218,8 +216,7 @@
     return { items, totalQty, errors };
   }
 
-  // Serialise a parsed batch back into a canonical multi-line "UID x QTY" form
-  // for storage in the "Parsed UIDs" Airtable column.
+  // Serialise a parsed batch back into a canonical multi-line "UID x QTY" form.
   function serialiseBatch(items) {
     if (!Array.isArray(items)) return '';
     return items.map(it => `${it.uid} x ${it.qty}`).join('\n');

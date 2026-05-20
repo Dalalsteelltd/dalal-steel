@@ -348,7 +348,10 @@ const CLOUDINARY_PRESET='umwnwbli';
 const SPN003_PROJECTS=['SPN003','NG008','NG014','SBN025','SBN005','SBN002','SBN022','ST300','SBN013','SPN023'];
 
 document.getElementById('dt').valueAsDate=new Date();
-const rows=[];
+const QC_STORE_KEY='dsi_rows_qc';
+function loadSavedRows(){try{const raw=localStorage.getItem(QC_STORE_KEY);if(!raw)return [];const v=JSON.parse(raw);return Array.isArray(v)?v:[];}catch(e){return [];}}
+function saveRows(){try{localStorage.setItem(QC_STORE_KEY,JSON.stringify(rows));}catch(e){}}
+const rows=loadSavedRows();
 
 function showPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -489,7 +492,7 @@ async function submit(){
     }
     const res=await fetch('/api/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:proj,fields})});
     if(!res.ok){const e=await res.json();throw new Error(e.error||'HTTP '+res.status);}
-    if(localRow) rows.unshift(localRow);
+    if(localRow){rows.unshift(localRow);saveRows();}
     renderTbl();updCharts();resetForm();
     toast('✓ Record submitted successfully','success');
   }catch(e){toast('✗ '+e.message,'error');}
@@ -522,6 +525,8 @@ function toast(msg,type){
   const t=document.getElementById('toast');t.textContent=msg;t.className='show '+type;
   setTimeout(function(){t.className='';},3500);
 }
+// Hydrate the in-page log + charts from persisted session rows (if any)
+renderTbl();updCharts();
 </script>
 </body>
 </html>
