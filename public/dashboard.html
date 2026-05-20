@@ -75,8 +75,8 @@
     </div>
     <div class="dsi-search-row">
       <div class="dsi-field">
-        <label>Beam UID</label>
-        <input type="text" id="sUid" placeholder="e.g. RF1 or BM-4412-A"/>
+        <label>Beam UID (contains)</label>
+        <input type="text" id="sUid" placeholder="Type any part — e.g. C10 finds SBN022-C10(1)"/>
       </div>
       <div class="dsi-field">
         <label>Project (optional)</label>
@@ -342,37 +342,45 @@
     const box = document.getElementById('sResult');
     if (!data) { box.classList.remove('show'); box.innerHTML = ''; return; }
     const s = data.summary;
+    const wCount = s.weldingCount || 0;
     box.classList.add('show');
     box.innerHTML =
       '<div class="dsi-search-summary">' +
-        '<strong>' + DSI.esc(data.uid) + '</strong>' +
+        '<strong>contains "' + DSI.esc(data.uid) + '"</strong>' +
         '<span class="dsi-dash-ts">Current: ' + DSI.esc(s.currentDept) + ' / ' + DSI.esc(s.currentStatus || '—') + '</span>' +
         '<div class="dsi-search-stages">' +
           '<span class="dsi-tag info">QC: ' + s.qcCount + '</span>' +
+          '<span class="dsi-tag err">Welding: ' + wCount + '</span>' +
           '<span class="dsi-tag warn">Loading: ' + s.loadingCount + '</span>' +
           '<span class="dsi-tag ' + (s.paintingCount?'ok':'neutral') + '">Painting: ' + s.paintingCount + '</span>' +
         '</div>' +
       '</div>' +
       (data.qc.length ? (
         '<div class="dsi-search-stage-title q">🔍 QC Inspections (' + data.qc.length + ')</div>' +
-        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Project</th><th>Inspection ID</th><th>Worktype</th><th>Result</th><th>Time</th></tr></thead><tbody>' +
-        data.qc.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.project) + '</span></td><td>' + DSI.esc(r.inspectionId) + '</td><td>' + DSI.esc(r.worktype) + '</td><td>' + statusTag(r.result) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.createdTime)) + '</td></tr>').join('') +
+        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Project</th><th>Beam UID</th><th>Inspection ID</th><th>Worktype</th><th>Result</th><th>Time</th></tr></thead><tbody>' +
+        data.qc.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.project) + '</span></td><td>' + DSI.esc(r.beamUid) + '</td><td>' + DSI.esc(r.inspectionId) + '</td><td>' + DSI.esc(r.worktype) + '</td><td>' + statusTag(r.result) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.createdTime)) + '</td></tr>').join('') +
+        '</tbody></table></div>'
+      ) : '') +
+      (data.welding && data.welding.length ? (
+        '<div class="dsi-search-stage-title q">🤖 Welding Batches (' + data.welding.length + ')</div>' +
+        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Batch ID</th><th>Project</th><th>Matched Qty</th><th>Matched UIDs</th><th>Cell / Joint</th><th>Result</th><th>Date</th></tr></thead><tbody>' +
+        data.welding.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.batchId) + '</span></td><td>' + DSI.esc(r.project) + '</td><td>' + DSI.esc(r.qty) + '</td><td class="muted">' + DSI.esc((r.matchedUids || []).join(', ')) + '</td><td>' + DSI.esc(r.cell) + ' · ' + DSI.esc(r.weldType) + ' / ' + DSI.esc(r.joint) + '</td><td>' + statusTag(r.result) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.weldDate)) + '</td></tr>').join('') +
         '</tbody></table></div>'
       ) : '') +
       (data.loading.length ? (
         '<div class="dsi-search-stage-title l">🚛 Loading Batches (' + data.loading.length + ')</div>' +
-        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Batch ID</th><th>Project</th><th>Qty</th><th>Vehicle</th><th>Destination</th><th>Status</th><th>Date</th></tr></thead><tbody>' +
-        data.loading.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.batchId) + '</span></td><td>' + DSI.esc(r.project) + '</td><td>' + DSI.esc(r.qty) + '</td><td>' + DSI.esc(r.vehicle) + '</td><td>' + DSI.esc(r.destination) + '</td><td>' + statusTag(r.status) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.loadingDate)) + '</td></tr>').join('') +
+        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Batch ID</th><th>Project</th><th>Matched Qty</th><th>Matched UIDs</th><th>Vehicle</th><th>Destination</th><th>Status</th><th>Date</th></tr></thead><tbody>' +
+        data.loading.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.batchId) + '</span></td><td>' + DSI.esc(r.project) + '</td><td>' + DSI.esc(r.qty) + '</td><td class="muted">' + DSI.esc((r.matchedUids || []).join(', ')) + '</td><td>' + DSI.esc(r.vehicle) + '</td><td>' + DSI.esc(r.destination) + '</td><td>' + statusTag(r.status) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.loadingDate)) + '</td></tr>').join('') +
         '</tbody></table></div>'
       ) : '') +
       (data.painting.length ? (
         '<div class="dsi-search-stage-title p">🎨 Painting Batches (' + data.painting.length + ')</div>' +
-        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Batch ID</th><th>Project</th><th>Qty</th><th>Paint System</th><th>Prep</th><th>Coating</th><th>Date</th></tr></thead><tbody>' +
-        data.painting.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.batchId) + '</span></td><td>' + DSI.esc(r.project) + '</td><td>' + DSI.esc(r.qty) + '</td><td>' + DSI.esc(r.paintSystem) + '</td><td>' + statusTag(r.surfacePrepStatus) + '</td><td>' + statusTag(r.coatingStatus) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.completionDate)) + '</td></tr>').join('') +
+        '<div class="dsi-table-wrap"><table class="dsi-tbl"><thead><tr><th>Batch ID</th><th>Project</th><th>Matched Qty</th><th>Matched UIDs</th><th>Paint System</th><th>Prep</th><th>Coating</th><th>Date</th></tr></thead><tbody>' +
+        data.painting.map(r => '<tr><td><span class="dsi-pill">' + DSI.esc(r.batchId) + '</span></td><td>' + DSI.esc(r.project) + '</td><td>' + DSI.esc(r.qty) + '</td><td class="muted">' + DSI.esc((r.matchedUids || []).join(', ')) + '</td><td>' + DSI.esc(r.paintSystem) + '</td><td>' + statusTag(r.surfacePrepStatus) + '</td><td>' + statusTag(r.coatingStatus) + '</td><td class="muted">' + DSI.esc(DSI.shortTime(r.completionDate)) + '</td></tr>').join('') +
         '</tbody></table></div>'
       ) : '') +
-      (!data.qc.length && !data.loading.length && !data.painting.length ?
-        '<div class="dsi-dash-empty" style="padding:16px">No records found for that UID.</div>' : '');
+      (!data.qc.length && !data.loading.length && !data.painting.length && !(data.welding && data.welding.length) ?
+        '<div class="dsi-dash-empty" style="padding:16px">No records contain "' + DSI.esc(data.uid) + '".</div>' : '');
   }
 
   async function doSearch(){
