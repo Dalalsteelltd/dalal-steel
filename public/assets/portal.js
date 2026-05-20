@@ -289,6 +289,17 @@
     return `${prefix}-${ymd}-${rand}`;
   }
 
+  // Crypto-grade UUID for idempotency keys. crypto.randomUUID is on every
+  // browser worth supporting; the fallback only fires on truly ancient ones.
+  function genIdempotencyKey() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return 'idem-' + Date.now().toString(36) + '-' +
+           Math.random().toString(36).slice(2, 10) +
+           Math.random().toString(36).slice(2, 10);
+  }
+
   function formatDate(d) {
     if (!d) return '';
     return String(d);
@@ -328,6 +339,7 @@
     postJson,
     getJson,
     uploadImage,
-    genBatchId
+    genBatchId,
+    genIdempotencyKey
   };
 })(window);

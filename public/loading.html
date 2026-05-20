@@ -239,7 +239,11 @@
 
   // Submit
   const submitBtn = document.getElementById('submitBtn');
+  // Held across retries so a re-submit after a timeout dedups server-side
+  // instead of creating a duplicate batch. Cleared after a successful insert.
+  let pendingIdempotencyKey = null;
   submitBtn.addEventListener('click', async () => {
+    if (!pendingIdempotencyKey) pendingIdempotencyKey = DSI.genIdempotencyKey();
     const payload = {
       batchId:     document.getElementById('f-bid').value.trim(),
       project:     document.getElementById('f-proj').value,
@@ -249,7 +253,8 @@
       status:      document.getElementById('f-status').value,
       loadedBy:    document.getElementById('f-by').value.trim(),
       loadingDate: document.getElementById('f-date').value,
-      notes:       document.getElementById('f-notes').value.trim()
+      notes:       document.getElementById('f-notes').value.trim(),
+      idempotencyKey: pendingIdempotencyKey
     };
     if (!payload.project) return DSI.toast('Please select a project number', 'error');
     if (!payload.batchId || !payload.vehicle || !payload.destination || !payload.beamUidsRaw || !payload.status || !payload.loadedBy || !payload.loadingDate)
@@ -283,7 +288,9 @@
         recordId:    resp.id,
         timestamp:   new Date().toISOString()
       });
-      DSI.toast('✓ Batch ' + payload.batchId + ' saved (' + resp.totalQty + ' units)', 'success');
+      const tag = resp.deduplicated ? ' (already saved earlier)' : '';
+      DSI.toast('✓ Batch ' + payload.batchId + ' saved (' + resp.totalQty + ' units)' + tag, 'success');
+      pendingIdempotencyKey = null;
       resetForm();
       render();
     } catch (err) {

@@ -252,7 +252,9 @@
   render();
 
   const submitBtn = document.getElementById('submitBtn');
+  let pendingIdempotencyKey = null;
   submitBtn.addEventListener('click', async () => {
+    if (!pendingIdempotencyKey) pendingIdempotencyKey = DSI.genIdempotencyKey();
     const qtyVal = qtyDoneEl.value === '' ? null : Number(qtyDoneEl.value);
     const payload = {
       paintBatchId:       document.getElementById('f-bid').value.trim(),
@@ -264,7 +266,8 @@
       quantityCompleted:  qtyVal,
       finishedBy:         document.getElementById('f-by').value.trim(),
       completionDate:     document.getElementById('f-date').value,
-      notes:              document.getElementById('f-notes').value.trim()
+      notes:              document.getElementById('f-notes').value.trim(),
+      idempotencyKey:     pendingIdempotencyKey
     };
     if (!payload.project) return DSI.toast('Please select a project number', 'error');
     if (!payload.paintBatchId || !payload.beamUidsRaw || !payload.surfacePrepStatus || !payload.coatingStatus || !payload.paintSystem || !payload.finishedBy || !payload.completionDate)
@@ -299,7 +302,9 @@
         recordId:          resp.id,
         timestamp:         new Date().toISOString()
       });
-      DSI.toast('✓ Batch ' + payload.paintBatchId + ' saved (' + resp.quantityCompleted + '/' + resp.totalQty + ' done)', 'success');
+      const tag = resp.deduplicated ? ' (already saved earlier)' : '';
+      DSI.toast('✓ Batch ' + payload.paintBatchId + ' saved (' + resp.quantityCompleted + '/' + resp.totalQty + ' done)' + tag, 'success');
+      pendingIdempotencyKey = null;
       resetForm();
       render();
     } catch (err) {

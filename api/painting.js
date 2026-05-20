@@ -1,6 +1,8 @@
 // api/painting.js — Painting / Finishing batch submission endpoint.
 // Posts a single batch row to the Airtable `Painting_Batches` table.
 
+const { findByIdempotencyKey } = require('../lib/dashboard-helpers');
+
 const TABLE = 'Painting_Batches';
 
 const ALLOWED_PROJECTS = new Set([
@@ -67,7 +69,24 @@ module.exports = async function handler(req, res) {
   const completionDate = trim(body.completionDate, 32);
   const notes = trim(body.notes, 2000);
   const imageUrl = trim(body.imageUrl, 500);
+  const idempotencyKey = trim(body.idempotencyKey, 80);
   let quantityCompletedRaw = body.quantityCompleted;
+
+  if (idempotencyKey) {
+    const existing = await findByIdempotencyKey(TABLE, idempotencyKey);
+    if (existing) {
+      const f = existing.fields || {};
+      return res.status(200).json({
+        success: true,
+        deduplicated: true,
+        id: existing.id,
+        paintBatchId: f['Paint Batch ID'] || paintBatchId,
+        itemCount: (String(f['Parsed UIDs'] || '').split(/\r?\n/).filter(Boolean)).length,
+        totalQty: Number(f['Total Quantity']) || 0,
+        quantityCompleted: Number(f['Quantity Completed']) || 0
+      });
+    }
+  }
 
   if (!paintBatchId) return res.status(400).json({ error: 'Paint Batch ID is required.' });
   if (!ALLOWED_PROJECTS.has(project)) return res.status(400).json({ error: 'Invalid project number.' });
@@ -105,6 +124,7 @@ module.exports = async function handler(req, res) {
     'Notes': notes
   };
   if (imageUrl) fields['Image'] = [{ url: imageUrl }];
+  if (idempotencyKey) fields['Idempotency Key'] = idempotencyKey;
 
   try {
     const airtableRes = await fetch(

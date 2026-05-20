@@ -2,6 +2,8 @@
 // Posts a single batch row to the Airtable `Loading_Batches` table.
 // Many Beam UIDs may be covered by one row (RF1 x 12, RF2 x 8, …).
 
+const { findByIdempotencyKey } = require('../lib/dashboard-helpers');
+
 const TABLE = 'Loading_Batches';
 
 const ALLOWED_PROJECTS = new Set([
@@ -68,6 +70,24 @@ module.exports = async function handler(req, res) {
   const loadingDate = trim(body.loadingDate, 32);
   const notes = trim(body.notes, 2000);
   const imageUrl = trim(body.imageUrl, 500);
+  const idempotencyKey = trim(body.idempotencyKey, 80);
+
+  // Dedup on idempotency key before validation so a retry of a successful
+  // submission returns the original record even if the client mangled fields.
+  if (idempotencyKey) {
+    const existing = await findByIdempotencyKey(TABLE, idempotencyKey);
+    if (existing) {
+      const f = existing.fields || {};
+      return res.status(200).json({
+        success: true,
+        deduplicated: true,
+        id: existing.id,
+        batchId: f['Batch ID'] || batchId,
+        itemCount: (String(f['Parsed UIDs'] || '').split(/\r?\n/).filter(Boolean)).length,
+        totalQty: Number(f['Total Quantity']) || 0
+      });
+    }
+  }
 
   if (!batchId) return res.status(400).json({ error: 'Batch ID is required.' });
   if (!ALLOWED_PROJECTS.has(project)) return res.status(400).json({ error: 'Invalid project number.' });
@@ -97,6 +117,7 @@ module.exports = async function handler(req, res) {
     'Notes': notes
   };
   if (imageUrl) fields['Proof Image'] = [{ url: imageUrl }];
+  if (idempotencyKey) fields['Idempotency Key'] = idempotencyKey;
 
   try {
     const airtableRes = await fetch(
