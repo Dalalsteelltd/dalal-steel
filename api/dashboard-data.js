@@ -214,7 +214,9 @@ module.exports = async function handler(req, res) {
       if (perProjectIdx[p]) { perProjectIdx[p].welded += qty; perProjectIdx[p].weldingBatches++; }
     });
 
-    // ── Recent batch summaries.
+    // ── Recent batch summaries. parsedUids feeds the dashboard's click-to-
+    // expand UID list — already serialised by the submit endpoints as
+    // "UID x N\nUID x N\n…" so we just pass the raw string through.
     const recentLoading = loadingRecords.slice(0, 12).map(rec => {
       const f = rec.fields || {};
       return {
@@ -226,7 +228,9 @@ module.exports = async function handler(req, res) {
         units: Number(f['Total Quantity']) || 0,
         status: f['Loading Status'] || '',
         loadedBy: f['Loaded By'] || '',
-        loadingDate: f['Loading Date'] || ''
+        loadingDate: f['Loading Date'] || '',
+        parsedUids: f['Parsed UIDs'] || '',
+        beamUidsRaw: f['Beam UIDs'] || ''
       };
     });
     const recentPainting = paintingRecords.slice(0, 12).map(rec => {
@@ -241,7 +245,9 @@ module.exports = async function handler(req, res) {
         surfacePrepStatus: f['Surface Prep Status'] || '',
         coatingStatus: f['Coating Status'] || '',
         finishedBy: f['Finished By'] || '',
-        completionDate: f['Completion Date'] || ''
+        completionDate: f['Completion Date'] || '',
+        parsedUids: f['Parsed UIDs'] || '',
+        beamUidsRaw: f['Beam UIDs'] || ''
       };
     });
     const recentWelding = weldingRecords.slice(0, 12).map(rec => {
@@ -257,7 +263,9 @@ module.exports = async function handler(req, res) {
         result: f['Inspection Result'] || '',
         operator: f['Operator'] || '',
         totalQty: Number(f['Total Quantity']) || 0,
-        weldDate: f['Weld Date'] || ''
+        weldDate: f['Weld Date'] || '',
+        parsedUids: f['Parsed UIDs'] || '',
+        beamUidsRaw: f['Beam UIDs'] || ''
       };
     });
 
