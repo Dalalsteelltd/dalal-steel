@@ -7,6 +7,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/portal.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  /* Click-to-expand UID panel for recent loading/painting/welding rows. */
+  .dsi-dash-row-wrap { border-bottom: 1px solid var(--border); }
+  .dsi-dash-row-wrap:last-child { border-bottom: none; }
+  .dsi-dash-row-wrap .dsi-dash-row { border-bottom: none; cursor: pointer; }
+  .dsi-dash-row-wrap .dsi-id-btn::before { content: '▸'; margin-right: 4px; font-size: .65rem; opacity: .6; transition: transform .15s; display: inline-block; }
+  .dsi-dash-row-wrap.expanded .dsi-id-btn::before { transform: rotate(90deg); }
+  .dsi-dash-uids { display: none; padding: 10px 18px 14px; background: var(--card-2); font-size: .78rem; }
+  .dsi-dash-row-wrap.expanded .dsi-dash-uids { display: block; }
+  .dsi-dash-uids-label { color: var(--muted); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; margin-bottom: 8px; }
+  .dsi-dash-uids-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dsi-dash-uids-list .dsi-pill { font-size: .7rem; padding: 3px 8px; }
+</style>
 </head>
 <body class="accent-violet">
 
@@ -41,6 +54,10 @@
     <a class="dsi-quicklink" href="https://dalalsteelltd.github.io/Dalalsteel/SBN022CONT.html" target="_blank" rel="noopener noreferrer">SBN022 live progress ↗</a>
     <span class="dsi-quicklinks-sep">·</span>
     <a class="dsi-quicklink" href="https://dalalsteelltd.github.io/Dalalsteel/ST300.html" target="_blank" rel="noopener noreferrer">ST300 live progress ↗</a>
+    <span class="dsi-quicklinks-sep">·</span>
+    <a class="dsi-quicklink" href="https://dalalsteelltd.github.io/Dalalsteel/SBN013.html" target="_blank" rel="noopener noreferrer">SBN013 live progress ↗</a>
+    <span class="dsi-quicklinks-sep">·</span>
+    <a class="dsi-quicklink" href="https://1drv.ms/x/c/c5bd21bede294670/IQACIgrrDD_iT6iN5O2odMapAYEuoYjESdcg4_uqcuhiv5c?e=NGKMm6" target="_blank" rel="noopener noreferrer">SPN023 progress ↗</a>
   </div>
 </div>
 
@@ -108,9 +125,18 @@
       <div class="dsi-project-table">
         <table>
           <thead>
-            <tr><th>Project</th><th>Welded</th><th>Painted</th><th>Loaded</th><th>Total units</th></tr>
+            <tr>
+              <th>Project</th>
+              <th title="QC Assembly inspections">QC Asm</th>
+              <th title="QC Fabrication inspections">QC Fab</th>
+              <th title="QC CO2 Welding inspections">QC Weld</th>
+              <th title="Robotic welding units">Welded</th>
+              <th>Painted</th>
+              <th>Loaded</th>
+              <th>Total</th>
+            </tr>
           </thead>
-          <tbody id="activeTbody"><tr><td colspan="5" class="dsi-empty">Loading…</td></tr></tbody>
+          <tbody id="activeTbody"><tr><td colspan="8" class="dsi-empty">Loading…</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -202,13 +228,14 @@
       plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{ size:11 } } } } }
   });
 
-  // Production funnel — horizontal bars so the stage drop-off reads top→down
-  // like the actual flow (Welded → Painted → Loaded → Delivered).
+  // Production funnel — horizontal bars top→down: QC stages first (Assembly,
+  // Fabrication, CO2 Welding) so a manager sees QC volume entering the line
+  // before robotic welding / painting / loading / delivery.
   const chFunnel = new Chart(document.getElementById('chFunnel').getContext('2d'), {
     type: 'bar',
-    data: { labels: ['Welded','Painted','Loaded','Delivered'],
-      datasets: [{ label: 'Units', data: [0,0,0,0],
-        backgroundColor: ['#f85149','#a371f7','#e39b37','#3fb950'],
+    data: { labels: ['QC Assembly','QC Fabrication','QC CO2 Welding','Welded','Painted','Loaded','Delivered'],
+      datasets: [{ label: 'Units / Records', data: [0,0,0,0,0,0,0],
+        backgroundColor: ['#58a6ff','#1f6feb','#79c0ff','#f85149','#a371f7','#e39b37','#3fb950'],
         borderRadius: 6 }] },
     options: { indexAxis: 'y', responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false} },
@@ -216,16 +243,22 @@
                y:{ grid:{ display:false } } } }
   });
 
-  // 7-day throughput — three series, one per stage.
+  // 7-day throughput — six series. QC stages count inspection records per
+  // day; production stages count units. Different units on the same axis is
+  // a compromise so the manager has one chart instead of two — colours and
+  // the legend disambiguate which line means what.
   const chThroughput = new Chart(document.getElementById('chThroughput').getContext('2d'), {
     type: 'line',
     data: { labels: [], datasets: [
+      { label:'QC Assembly', data:[], borderColor:'#58a6ff', backgroundColor:'rgba(88,166,255,.15)', tension:.35, fill:false, pointRadius:3 },
+      { label:'QC Fabrication', data:[], borderColor:'#1f6feb', backgroundColor:'rgba(31,111,235,.15)', tension:.35, fill:false, pointRadius:3 },
+      { label:'QC CO2 Welding', data:[], borderColor:'#79c0ff', backgroundColor:'rgba(121,192,255,.15)', tension:.35, fill:false, pointRadius:3 },
       { label:'Welded', data:[], borderColor:'#f85149', backgroundColor:'rgba(248,81,73,.15)', tension:.35, fill:false, pointRadius:3 },
       { label:'Painted', data:[], borderColor:'#a371f7', backgroundColor:'rgba(163,113,247,.15)', tension:.35, fill:false, pointRadius:3 },
       { label:'Loaded', data:[], borderColor:'#e39b37', backgroundColor:'rgba(227,155,55,.15)', tension:.35, fill:false, pointRadius:3 }
     ]},
     options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{ size:11 } } } },
+      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:10, font:{ size:10 } } } },
       scales:{ y:{ beginAtZero:true, grid:{ color:'rgba(255,255,255,.05)' } },
                x:{ grid:{ display:false } } } }
   });
@@ -248,16 +281,37 @@
     return '<span class="dsi-tag ' + DSI.statusClass(status) + '">' + DSI.esc(status || '—') + '</span>';
   }
 
+  // Build the expandable UID panel for one batch row. Parsed UIDs are
+  // already serialised as "UID x N\nUID x N" by the submit endpoints;
+  // fall back to the raw user input if Parsed UIDs isn't present (older
+  // pre-batch records).
+  function uidPanel(parsed, raw){
+    const src = (parsed || raw || '').toString();
+    const items = src.split(/\r?\n|,/).map(s => s.trim()).filter(Boolean);
+    if (!items.length) {
+      return '<div class="dsi-dash-uids"><div class="dsi-dash-uids-label">Beam UIDs</div><div style="color:var(--muted);font-size:.75rem">No beam UID details recorded.</div></div>';
+    }
+    return '<div class="dsi-dash-uids">' +
+      '<div class="dsi-dash-uids-label">Beam UIDs in batch (' + items.length + ')</div>' +
+      '<div class="dsi-dash-uids-list">' +
+        items.map(it => '<span class="dsi-pill">' + DSI.esc(it) + '</span>').join('') +
+      '</div>' +
+    '</div>';
+  }
+
   function renderRecentLoading(rows){
     const body = document.getElementById('body-loading');
     document.getElementById('loading-count').textContent = rows.length;
     if (!rows.length) { body.innerHTML = '<div class="dsi-dash-empty">No loading batches yet.</div>'; return; }
     body.innerHTML = rows.map(r =>
-      '<div class="dsi-dash-row">' +
-        '<button class="dsi-id-btn" title="Loading batch">' + DSI.esc(r.batchId || r.id) + '</button>' +
-        '<div class="dsi-dash-context"><strong>' + DSI.esc(r.project) + '</strong> · ' + DSI.esc(r.units) + ' units · Truck ' + DSI.esc(r.vehicle) + ' → ' + DSI.esc(r.destination) + '</div>' +
-        statusTag(r.status) +
-        '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.loadingDate)) + '</span>' +
+      '<div class="dsi-dash-row-wrap">' +
+        '<div class="dsi-dash-row" data-expand>' +
+          '<button class="dsi-id-btn" title="Click to see UIDs">' + DSI.esc(r.batchId || r.id) + '</button>' +
+          '<div class="dsi-dash-context"><strong>' + DSI.esc(r.project) + '</strong> · ' + DSI.esc(r.units) + ' units · Truck ' + DSI.esc(r.vehicle) + ' → ' + DSI.esc(r.destination) + '</div>' +
+          statusTag(r.status) +
+          '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.loadingDate)) + '</span>' +
+        '</div>' +
+        uidPanel(r.parsedUids, r.beamUidsRaw) +
       '</div>'
     ).join('');
   }
@@ -267,11 +321,14 @@
     document.getElementById('painting-count').textContent = rows.length;
     if (!rows.length) { body.innerHTML = '<div class="dsi-dash-empty">No painting batches yet.</div>'; return; }
     body.innerHTML = rows.map(r =>
-      '<div class="dsi-dash-row">' +
-        '<button class="dsi-id-btn" title="Paint batch">' + DSI.esc(r.batchId || r.id) + '</button>' +
-        '<div class="dsi-dash-context"><strong>' + DSI.esc(r.project) + '</strong> · ' + DSI.esc(r.quantityCompleted) + '/' + DSI.esc(r.totalQty) + ' done · ' + DSI.esc(r.paintSystem) + '</div>' +
-        statusTag(r.coatingStatus) +
-        '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.completionDate)) + '</span>' +
+      '<div class="dsi-dash-row-wrap">' +
+        '<div class="dsi-dash-row" data-expand>' +
+          '<button class="dsi-id-btn" title="Click to see UIDs">' + DSI.esc(r.batchId || r.id) + '</button>' +
+          '<div class="dsi-dash-context"><strong>' + DSI.esc(r.project) + '</strong> · ' + DSI.esc(r.quantityCompleted) + '/' + DSI.esc(r.totalQty) + ' done · ' + DSI.esc(r.paintSystem) + '</div>' +
+          statusTag(r.coatingStatus) +
+          '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.completionDate)) + '</span>' +
+        '</div>' +
+        uidPanel(r.parsedUids, r.beamUidsRaw) +
       '</div>'
     ).join('');
   }
@@ -281,14 +338,26 @@
     document.getElementById('welding-count').textContent = rows.length;
     if (!rows.length) { body.innerHTML = '<div class="dsi-dash-empty">No welding batches yet.</div>'; return; }
     body.innerHTML = rows.map(r =>
-      '<div class="dsi-dash-row">' +
-        '<button class="dsi-id-btn" title="Weld batch">' + DSI.esc(r.weldBatchId || r.id) + '</button>' +
-        '<div class="dsi-dash-context"><strong>' + DSI.esc(r.project) + '</strong> · ' + DSI.esc(r.totalQty) + ' units · ' + DSI.esc(r.cell) + ' · ' + DSI.esc(r.weldType) + ' / ' + DSI.esc(r.joint) + '</div>' +
-        statusTag(r.result) +
-        '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.weldDate)) + '</span>' +
+      '<div class="dsi-dash-row-wrap">' +
+        '<div class="dsi-dash-row" data-expand>' +
+          '<button class="dsi-id-btn" title="Click to see UIDs">' + DSI.esc(r.weldBatchId || r.id) + '</button>' +
+          '<div class="dsi-dash-context"><strong>' + DSI.esc(r.project) + '</strong> · ' + DSI.esc(r.totalQty) + ' units · ' + DSI.esc(r.cell) + ' · ' + DSI.esc(r.weldType) + ' / ' + DSI.esc(r.joint) + '</div>' +
+          statusTag(r.result) +
+          '<span class="dsi-dash-ts">' + DSI.esc(DSI.shortTime(r.weldDate)) + '</span>' +
+        '</div>' +
+        uidPanel(r.parsedUids, r.beamUidsRaw) +
       '</div>'
     ).join('');
   }
+
+  // Delegated click handler — toggle the parent wrap when any expandable
+  // row is clicked. Lives outside the render functions so it's attached once.
+  document.addEventListener('click', e => {
+    const row = e.target.closest('.dsi-dash-row[data-expand]');
+    if (!row) return;
+    const wrap = row.closest('.dsi-dash-row-wrap');
+    if (wrap) wrap.classList.toggle('expanded');
+  });
 
   // Recent QC — always-on bottom strip showing the last 5 inspections across all projects.
   function renderRecentQc(rows){
@@ -321,45 +390,58 @@
   }
 
   function renderFunnel(funnel){
-    const data = [funnel.welded || 0, funnel.painted || 0, funnel.loaded || 0, funnel.delivered || 0];
-    chFunnel.data.datasets[0].data = data;
+    const stages = [
+      { label:'QC Assembly',     value: funnel.qcAssembly     || 0 },
+      { label:'QC Fabrication',  value: funnel.qcFabrication  || 0 },
+      { label:'QC CO2 Welding',  value: funnel.qcWelding      || 0 },
+      { label:'Welded',          value: funnel.welded         || 0 },
+      { label:'Painted',         value: funnel.painted        || 0 },
+      { label:'Loaded',          value: funnel.loaded         || 0 },
+      { label:'Delivered',       value: funnel.delivered      || 0 }
+    ];
+    chFunnel.data.datasets[0].data = stages.map(s => s.value);
     chFunnel.update();
-    // Drop-off labels between each stage — surfaces the biggest gap visually.
-    const labels = ['Welded','Painted','Loaded','Delivered'];
+    // Drop-off labels between adjacent stages — biggest drop = bottleneck.
     const gaps = [];
-    for (let i = 1; i < data.length; i++) {
-      const drop = data[i-1] - data[i];
-      const pct = data[i-1] ? Math.round((drop / data[i-1]) * 100) : 0;
+    for (let i = 1; i < stages.length; i++) {
+      const drop = stages[i-1].value - stages[i].value;
+      const pct = stages[i-1].value ? Math.round((drop / stages[i-1].value) * 100) : 0;
       gaps.push(
-        '<span><strong style="color:#fff">' + labels[i-1] + ' → ' + labels[i] + ':</strong> ' +
-        drop.toLocaleString() + ' units (' + pct + '% drop)</span>'
+        '<span><strong style="color:#fff">' + stages[i-1].label + ' → ' + stages[i].label + ':</strong> ' +
+        drop.toLocaleString() + ' (' + pct + '% drop)</span>'
       );
     }
     document.getElementById('funnelGaps').innerHTML = gaps.join('');
   }
 
   function renderThroughput(throughput){
-    const labels = (throughput.welded || []).map(p => shortDay(p.date));
-    chThroughput.data.labels = labels;
-    chThroughput.data.datasets[0].data = (throughput.welded || []).map(p => p.value);
-    chThroughput.data.datasets[1].data = (throughput.painted || []).map(p => p.value);
-    chThroughput.data.datasets[2].data = (throughput.loaded || []).map(p => p.value);
+    const series = throughput.qcAssembly || throughput.welded || [];
+    chThroughput.data.labels = series.map(p => shortDay(p.date));
+    chThroughput.data.datasets[0].data = (throughput.qcAssembly    || []).map(p => p.value);
+    chThroughput.data.datasets[1].data = (throughput.qcFabrication || []).map(p => p.value);
+    chThroughput.data.datasets[2].data = (throughput.qcWelding     || []).map(p => p.value);
+    chThroughput.data.datasets[3].data = (throughput.welded        || []).map(p => p.value);
+    chThroughput.data.datasets[4].data = (throughput.painted       || []).map(p => p.value);
+    chThroughput.data.datasets[5].data = (throughput.loaded        || []).map(p => p.value);
     chThroughput.update();
   }
 
   function renderActiveProjects(projects){
     const body = document.getElementById('activeTbody');
     if (!projects || !projects.length) {
-      body.innerHTML = '<tr><td colspan="5" class="dsi-empty">No project activity in the last 7 days.</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" class="dsi-empty">No project activity in the last 7 days.</td></tr>';
       return;
     }
     body.innerHTML = projects.map(p =>
       '<tr>' +
         '<td><span class="dsi-pill">' + DSI.esc(p.project) + '</span></td>' +
-        '<td style="color:#f85149">' + p.welded.toLocaleString() + '</td>' +
-        '<td style="color:#a371f7">' + p.painted.toLocaleString() + '</td>' +
-        '<td style="color:#e39b37">' + p.loaded.toLocaleString() + '</td>' +
-        '<td><strong>' + p.total.toLocaleString() + '</strong></td>' +
+        '<td style="color:#58a6ff">' + (p.qcAssembly    || 0).toLocaleString() + '</td>' +
+        '<td style="color:#1f6feb">' + (p.qcFabrication || 0).toLocaleString() + '</td>' +
+        '<td style="color:#79c0ff">' + (p.qcWelding     || 0).toLocaleString() + '</td>' +
+        '<td style="color:#f85149">' + (p.welded        || 0).toLocaleString() + '</td>' +
+        '<td style="color:#a371f7">' + (p.painted       || 0).toLocaleString() + '</td>' +
+        '<td style="color:#e39b37">' + (p.loaded        || 0).toLocaleString() + '</td>' +
+        '<td><strong>' + (p.total || 0).toLocaleString() + '</strong></td>' +
       '</tr>'
     ).join('');
   }

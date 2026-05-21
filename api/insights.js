@@ -78,6 +78,10 @@ module.exports = async function handler(req, res) {
 
     // ── QC: scan all 13 project tables in parallel. We need every record so
     // pass-rate trends use the full history, not just the most-recent 100.
+    // Worktype is included so the funnel / throughput / active-projects views
+    // can break QC activity down into Assembly, Fabrication and CO2 Welding
+    // (stored as worktype "Welding" — i.e. the manual CO2 step that precedes
+    // robotic welding).
     const qcPromises = Object.entries(PROJECT_TABLES).map(async ([project, table]) => {
       try {
         const records = await fetchAirtableAll(table, {
@@ -86,7 +90,9 @@ module.exports = async function handler(req, res) {
             'Operation Inspection Results',
             'Status',
             'Created Time',
-            'Date'
+            'Date',
+            'Worktype',
+            'Work Type'
           ]
         });
         return { project, records };
@@ -115,11 +121,82 @@ module.exports = async function handler(req, res) {
       }).catch(() => [])
     ]);
 
-    // ── Funnel: total units at each stage. "Welded" counts every welded unit
-    // regardless of inspection result (rework / rejects are still welding
-    // work that happened — quality is shown separately in the QC trend).
-    // "Painted" sums Quantity Completed across all batches, so partial work
-    // is counted instead of waiting for the whole batch to be Completed.
+    // Shared 7-day window helpers used by every section below.
+    const empty7 = () => days.map(d => ({ date: d, value: 0 }));
+    const dayIdx = Object.create(null);
+    days.forEach((d, i) => { dayIdx[d] = i; });
+    const windowEnd = days[days.length - 1];
+    const inWindow = k => k && k >= windowStart && k <= windowEnd;
+
+    // Initialise per-project activity buckets up front so QC + production
+    // passes can both write into the same structure.
+    const activity = Object.create(null);
+    Object.keys(PROJECT_TABLES).forEach(p => {
+      activity[p] = {
+        project: p,
+        qcAssembly: 0, qcFabrication: 0, qcWelding: 0,
+        welded: 0, painted: 0, loaded: 0
+      };
+    });
+
+    // ── QC pass: iterate every QC record once and fan out to the four QC-
+    // derived datasets (funnel totals, daily throughput series, per-project
+    // activity, quality trend). One pass is much cheaper than four since
+    // qcResults can be tens of thousands of records across 13 tables.
+    let qcAssemblyTotal = 0, qcFabricationTotal = 0, qcWeldingTotal = 0;
+    const qcAssemblySeries = empty7();
+    const qcFabricationSeries = empty7();
+    const qcWeldingSeries = empty7();
+    const qualityByDay = days.map(d => ({ date: d, total: 0, passed: 0 }));
+
+    qcResults.forEach(({ project, records }) => {
+      records.forEach(rec => {
+        const f = rec.fields || {};
+        const wt = String(f['Worktype'] || f['Work Type'] || '').trim();
+
+        // Funnel totals are all-time so the manager sees cumulative QC volume
+        // alongside cumulative production output.
+        if (wt === 'Assembly') qcAssemblyTotal++;
+        else if (wt === 'Fabrication') qcFabricationTotal++;
+        else if (wt === 'Welding') qcWeldingTotal++; // CO2/manual welding stage
+
+        const k = dayKey(f['Created Time'] || f['Date'] || rec.createdTime);
+        if (k in dayIdx) {
+          const i = dayIdx[k];
+          if (wt === 'Assembly') qcAssemblySeries[i].value++;
+          else if (wt === 'Fabrication') qcFabricationSeries[i].value++;
+          else if (wt === 'Welding') qcWeldingSeries[i].value++;
+
+          const status = f['Operation Inspection Result']
+                      || f['Operation Inspection Results']
+                      || f['Status']
+                      || '';
+          if (QC_PASS.has(status)) { qualityByDay[i].total++; qualityByDay[i].passed++; }
+          else if (QC_FAIL.has(status)) { qualityByDay[i].total++; }
+        }
+
+        if (inWindow(k) && activity[project]) {
+          if (wt === 'Assembly') activity[project].qcAssembly++;
+          else if (wt === 'Fabrication') activity[project].qcFabrication++;
+          else if (wt === 'Welding') activity[project].qcWelding++;
+        }
+      });
+    });
+
+    const qualitySeries = qualityByDay.map(d => ({
+      date: d.date,
+      total: d.total,
+      passed: d.passed,
+      // null when no inspections that day → frontend shows a gap rather than
+      // plotting a misleading 0% (no data ≠ everything failed).
+      passRate: d.total > 0 ? Math.round((d.passed / d.total) * 1000) / 10 : null
+    }));
+
+    // ── Funnel: total units at each production stage. "Welded" counts every
+    // welded unit regardless of inspection result (rework / rejects are still
+    // welding work that happened — quality is shown separately in the QC
+    // trend). "Painted" sums Quantity Completed across all batches, so
+    // partial work is counted instead of waiting for batches to be Completed.
     // Loading distinguishes "loaded" (left the facility) from "delivered".
     let weldedTotal = 0, paintedTotal = 0, loadedTotal = 0, deliveredTotal = 0;
     welding.forEach(rec => {
@@ -138,14 +215,11 @@ module.exports = async function handler(req, res) {
       if (status === 'Delivered') deliveredTotal += qty;
     });
 
-    // ── 7-day throughput: per-day welded / painted / loaded units. Same
-    // counting rules as the funnel so the daily series sums to the totals.
-    const empty7 = () => days.map(d => ({ date: d, value: 0 }));
+    // ── 7-day throughput: per-day production units. Same counting rules as
+    // the funnel so the daily series sums up to the cumulative totals.
     const weldedSeries = empty7();
     const paintedSeries = empty7();
     const loadedSeries = empty7();
-    const dayIdx = Object.create(null);
-    days.forEach((d, i) => { dayIdx[d] = i; });
 
     welding.forEach(rec => {
       const f = rec.fields || {};
@@ -165,16 +239,10 @@ module.exports = async function handler(req, res) {
       if (k in dayIdx) loadedSeries[dayIdx[k]].value += Number(f['Total Quantity']) || 0;
     });
 
-    // ── Active projects (last 7 days): rank by total units the project
-    // touched in the window. No status filter — "active" means activity, not
-    // necessarily completed work. A project with five In-Progress paint
-    // batches and a Pending loading batch should still show as active.
-    const activity = Object.create(null);
-    Object.keys(PROJECT_TABLES).forEach(p => {
-      activity[p] = { project: p, welded: 0, painted: 0, loaded: 0 };
-    });
-    const windowEnd = days[days.length - 1];
-    const inWindow = k => k && k >= windowStart && k <= windowEnd;
+    // ── Active projects (last 7 days): rank by total activity in the window
+    // (QC inspections + welded/painted/loaded units). No status filter on
+    // production — "active" means activity, not necessarily completed work.
+    // A project with five In-Progress paint batches still shows as active.
     const bumpActive = (recs, qtyField, dateField, key) => {
       recs.forEach(rec => {
         const f = rec.fields || {};
@@ -189,52 +257,30 @@ module.exports = async function handler(req, res) {
     bumpActive(loading, 'Total Quantity', 'Loading Date', 'loaded');
 
     const activeProjects = Object.values(activity)
-      .map(p => ({ ...p, total: p.welded + p.painted + p.loaded }))
+      .map(p => ({
+        ...p,
+        total: p.qcAssembly + p.qcFabrication + p.qcWelding + p.welded + p.painted + p.loaded
+      }))
       .filter(p => p.total > 0)
       .sort((a, b) => b.total - a.total)
       .slice(0, 8);
 
-    // ── Quality trend: per-day QC pass rate, derived from records whose
-    // Created Time (or Date) falls in the 7-day window.
-    const qualityByDay = days.map(d => ({ date: d, total: 0, passed: 0 }));
-    qcResults.forEach(({ records }) => {
-      records.forEach(rec => {
-        const f = rec.fields || {};
-        const k = dayKey(f['Created Time'] || f['Date'] || rec.createdTime);
-        if (!(k in dayIdx)) return;
-        const status = f['Operation Inspection Result']
-                    || f['Operation Inspection Results']
-                    || f['Status']
-                    || '';
-        // Only counted records (pass or fail) contribute. Blank/in-progress
-        // skip so the rate isn't dragged toward 0 by yet-to-be-judged work.
-        if (QC_PASS.has(status)) {
-          qualityByDay[dayIdx[k]].total++;
-          qualityByDay[dayIdx[k]].passed++;
-        } else if (QC_FAIL.has(status)) {
-          qualityByDay[dayIdx[k]].total++;
-        }
-      });
-    });
-    const qualitySeries = qualityByDay.map(d => ({
-      date: d.date,
-      total: d.total,
-      passed: d.passed,
-      // null when no inspections that day → frontend shows a gap rather than
-      // plotting a misleading 0% (no data ≠ everything failed).
-      passRate: d.total > 0 ? Math.round((d.passed / d.total) * 1000) / 10 : null
-    }));
-
     const payload = {
       generatedAt: new Date().toISOString(),
-      window: { start: windowStart, end: days[days.length - 1], days },
+      window: { start: windowStart, end: windowEnd, days },
       funnel: {
+        qcAssembly: qcAssemblyTotal,
+        qcFabrication: qcFabricationTotal,
+        qcWelding: qcWeldingTotal, // CO2 / manual welding inspections
         welded: weldedTotal,
         painted: paintedTotal,
         loaded: loadedTotal,
         delivered: deliveredTotal
       },
       throughput: {
+        qcAssembly: qcAssemblySeries,
+        qcFabrication: qcFabricationSeries,
+        qcWelding: qcWeldingSeries,
         welded: weldedSeries,
         painted: paintedSeries,
         loaded: loadedSeries
