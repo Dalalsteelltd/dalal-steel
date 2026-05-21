@@ -279,7 +279,9 @@
 
   // Submit
   const submitBtn = document.getElementById('submitBtn');
+  let pendingIdempotencyKey = null;
   submitBtn.addEventListener('click', async () => {
+    if (!pendingIdempotencyKey) pendingIdempotencyKey = DSI.genIdempotencyKey();
     const payload = {
       weldBatchId: document.getElementById('f-bid').value.trim(),
       project:     document.getElementById('f-proj').value,
@@ -299,7 +301,8 @@
       result:      document.getElementById('f-result').value,
       operator:    document.getElementById('f-by').value.trim(),
       weldDate:    document.getElementById('f-date').value,
-      notes:       document.getElementById('f-notes').value.trim()
+      notes:       document.getElementById('f-notes').value.trim(),
+      idempotencyKey: pendingIdempotencyKey
     };
     if (!payload.project) return DSI.toast('Please select a project number', 'error');
     if (!payload.weldBatchId || !payload.beamUidsRaw || !payload.cell || !payload.weldType ||
@@ -339,7 +342,9 @@
         recordId:    resp.id,
         timestamp:   new Date().toISOString()
       });
-      DSI.toast('✓ Batch ' + payload.weldBatchId + ' saved (' + resp.totalQty + ' units)', 'success');
+      const tag = resp.deduplicated ? ' (already saved earlier)' : '';
+      DSI.toast('✓ Batch ' + payload.weldBatchId + ' saved (' + resp.totalQty + ' units)' + tag, 'success');
+      pendingIdempotencyKey = null;
       resetForm();
       render();
     } catch (err) {

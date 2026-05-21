@@ -2,6 +2,7 @@
   "projects": [
     { "id": "SPN004", "name": "SPN004" },
     { "id": "SPN062", "name": "SPN062" },
+    { "id": "SBN003", "name": "SBN003" },
     { "id": "SPN003", "name": "SPN003" },
     { "id": "NG008",  "name": "NG008"  },
     { "id": "NG014",  "name": "NG014"  },

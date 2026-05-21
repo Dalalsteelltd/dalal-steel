@@ -2,6 +2,8 @@
 // Posts a single batch row to the Airtable `Welding_Batches` table.
 // Many Beam UIDs may be covered by one row (same cell / joint / parameters).
 
+const { findByIdempotencyKey } = require('../lib/dashboard-helpers');
+
 const TABLE = 'Welding_Batches';
 
 const ALLOWED_PROJECTS = new Set([
@@ -81,6 +83,22 @@ module.exports = async function handler(req, res) {
   const weldDate = trim(body.weldDate, 32);
   const notes = trim(body.notes, 2000);
   const imageUrl = trim(body.imageUrl, 500);
+  const idempotencyKey = trim(body.idempotencyKey, 80);
+
+  if (idempotencyKey) {
+    const existing = await findByIdempotencyKey(TABLE, idempotencyKey);
+    if (existing) {
+      const f = existing.fields || {};
+      return res.status(200).json({
+        success: true,
+        deduplicated: true,
+        id: existing.id,
+        weldBatchId: f['Weld Batch ID'] || weldBatchId,
+        itemCount: (String(f['Parsed UIDs'] || '').split(/\r?\n/).filter(Boolean)).length,
+        totalQty: Number(f['Total Quantity']) || 0
+      });
+    }
+  }
 
   const amperage = num(body.amperage);
   const voltage = num(body.voltage);
@@ -137,6 +155,7 @@ module.exports = async function handler(req, res) {
     'Notes': notes
   };
   if (imageUrl) fields['Image'] = [{ url: imageUrl }];
+  if (idempotencyKey) fields['Idempotency Key'] = idempotencyKey;
 
   try {
     const airtableRes = await fetch(
