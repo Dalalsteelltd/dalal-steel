@@ -89,16 +89,35 @@
     <div class="dsi-search-result" id="sResult"></div>
   </div>
 
-  <!-- Per-project rollup (Google Sheets-driven stage percentages) -->
-  <div class="dsi-chart-card" style="margin-bottom:22px">
-    <h4>🏗️ Per-project rollup — stage progress</h4>
-    <div class="dsi-project-table">
-      <table>
-        <thead>
-          <tr><th>Project</th><th>QC %</th><th>Welding %</th><th>Painting %</th><th>Overall %</th></tr>
-        </thead>
-        <tbody id="projTbody"><tr><td colspan="5" class="dsi-empty">Loading…</td></tr></tbody>
-      </table>
+  <!-- Operations insights (live from Airtable, no manual upkeep) -->
+  <div class="dsi-charts-row">
+    <div class="dsi-chart-card">
+      <h4>🔻 Production funnel — units by stage</h4>
+      <canvas id="chFunnel" height="220"></canvas>
+      <div id="funnelGaps" style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;font-size:.72rem;color:var(--muted)"></div>
+    </div>
+    <div class="dsi-chart-card">
+      <h4>📈 7-day throughput — units processed per day</h4>
+      <canvas id="chThroughput" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="dsi-charts-row" style="margin-bottom:22px">
+    <div class="dsi-chart-card">
+      <h4>🏆 Active projects (last 7 days)</h4>
+      <div class="dsi-project-table">
+        <table>
+          <thead>
+            <tr><th>Project</th><th>Welded</th><th>Painted</th><th>Loaded</th><th>Total units</th></tr>
+          </thead>
+          <tbody id="activeTbody"><tr><td colspan="5" class="dsi-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="dsi-chart-card">
+      <h4>✅ Quality trend — QC pass rate (last 7 days)</h4>
+      <canvas id="chQuality" height="220"></canvas>
+      <div id="qualitySummary" style="margin-top:10px;font-size:.72rem;color:var(--muted)"></div>
     </div>
   </div>
 
@@ -183,6 +202,48 @@
       plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{ size:11 } } } } }
   });
 
+  // Production funnel — horizontal bars so the stage drop-off reads top→down
+  // like the actual flow (Welded → Painted → Loaded → Delivered).
+  const chFunnel = new Chart(document.getElementById('chFunnel').getContext('2d'), {
+    type: 'bar',
+    data: { labels: ['Welded','Painted','Loaded','Delivered'],
+      datasets: [{ label: 'Units', data: [0,0,0,0],
+        backgroundColor: ['#f85149','#a371f7','#e39b37','#3fb950'],
+        borderRadius: 6 }] },
+    options: { indexAxis: 'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{ x:{ beginAtZero:true, grid:{ color:'rgba(255,255,255,.05)' } },
+               y:{ grid:{ display:false } } } }
+  });
+
+  // 7-day throughput — three series, one per stage.
+  const chThroughput = new Chart(document.getElementById('chThroughput').getContext('2d'), {
+    type: 'line',
+    data: { labels: [], datasets: [
+      { label:'Welded', data:[], borderColor:'#f85149', backgroundColor:'rgba(248,81,73,.15)', tension:.35, fill:false, pointRadius:3 },
+      { label:'Painted', data:[], borderColor:'#a371f7', backgroundColor:'rgba(163,113,247,.15)', tension:.35, fill:false, pointRadius:3 },
+      { label:'Loaded', data:[], borderColor:'#e39b37', backgroundColor:'rgba(227,155,55,.15)', tension:.35, fill:false, pointRadius:3 }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{ size:11 } } } },
+      scales:{ y:{ beginAtZero:true, grid:{ color:'rgba(255,255,255,.05)' } },
+               x:{ grid:{ display:false } } } }
+  });
+
+  // Quality trend — single line, pass-rate %. spanGaps=false so days with no
+  // inspections show as gaps (null in the dataset).
+  const chQuality = new Chart(document.getElementById('chQuality').getContext('2d'), {
+    type: 'line',
+    data: { labels: [], datasets: [
+      { label:'Pass rate %', data:[], borderColor:'#3fb950', backgroundColor:'rgba(63,185,80,.15)', tension:.3, fill:true, pointRadius:4, spanGaps:false }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{
+        label: ctx => ctx.parsed.y === null ? 'No inspections' : ctx.parsed.y + '% pass rate' } } },
+      scales:{ y:{ beginAtZero:true, max:100, ticks:{ callback: v => v + '%' }, grid:{ color:'rgba(255,255,255,.05)' } },
+               x:{ grid:{ display:false } } } }
+  });
+
   function statusTag(status){
     return '<span class="dsi-tag ' + DSI.statusClass(status) + '">' + DSI.esc(status || '—') + '</span>';
   }
@@ -252,30 +313,69 @@
     ).join('');
   }
 
-  // Render a single percentage cell. null/undefined → em-dash so missing rows
-  // in the Google Sheet don't masquerade as 0%.
-  function pctCell(v){
-    if (v === null || v === undefined || v === '') return '<td style="color:var(--muted)">—</td>';
-    const n = Number(v);
-    if (!isFinite(n)) return '<td style="color:var(--muted)">—</td>';
-    return '<td>' + (Math.round(n * 10) / 10) + '%</td>';
+  // Format YYYY-MM-DD as "Mon 14" for compact chart axis labels.
+  function shortDay(iso){
+    const d = new Date(iso + 'T00:00:00Z');
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', timeZone: 'UTC' });
   }
 
-  function renderProjectTable(projects){
-    const body = document.getElementById('projTbody');
-    if (!projects || !projects.length) { body.innerHTML = '<tr><td colspan="5" class="dsi-empty">No project data in PROJECT_PROGRESS sheet.</td></tr>'; return; }
-    body.innerHTML = projects.map(p => {
-      const overall = (p.overall === null || p.overall === undefined) ? null : Number(p.overall);
-      const overallPct = overall === null || !isFinite(overall) ? 0 : Math.max(0, Math.min(100, overall));
-      const overallText = overall === null || !isFinite(overall) ? '—' : (Math.round(overall * 10) / 10) + '%';
-      return '<tr>' +
+  function renderFunnel(funnel){
+    const data = [funnel.welded || 0, funnel.painted || 0, funnel.loaded || 0, funnel.delivered || 0];
+    chFunnel.data.datasets[0].data = data;
+    chFunnel.update();
+    // Drop-off labels between each stage — surfaces the biggest gap visually.
+    const labels = ['Welded','Painted','Loaded','Delivered'];
+    const gaps = [];
+    for (let i = 1; i < data.length; i++) {
+      const drop = data[i-1] - data[i];
+      const pct = data[i-1] ? Math.round((drop / data[i-1]) * 100) : 0;
+      gaps.push(
+        '<span><strong style="color:#fff">' + labels[i-1] + ' → ' + labels[i] + ':</strong> ' +
+        drop.toLocaleString() + ' units (' + pct + '% drop)</span>'
+      );
+    }
+    document.getElementById('funnelGaps').innerHTML = gaps.join('');
+  }
+
+  function renderThroughput(throughput){
+    const labels = (throughput.welded || []).map(p => shortDay(p.date));
+    chThroughput.data.labels = labels;
+    chThroughput.data.datasets[0].data = (throughput.welded || []).map(p => p.value);
+    chThroughput.data.datasets[1].data = (throughput.painted || []).map(p => p.value);
+    chThroughput.data.datasets[2].data = (throughput.loaded || []).map(p => p.value);
+    chThroughput.update();
+  }
+
+  function renderActiveProjects(projects){
+    const body = document.getElementById('activeTbody');
+    if (!projects || !projects.length) {
+      body.innerHTML = '<tr><td colspan="5" class="dsi-empty">No project activity in the last 7 days.</td></tr>';
+      return;
+    }
+    body.innerHTML = projects.map(p =>
+      '<tr>' +
         '<td><span class="dsi-pill">' + DSI.esc(p.project) + '</span></td>' +
-        pctCell(p.qc) +
-        pctCell(p.welding) +
-        pctCell(p.painting) +
-        '<td><div class="progressbar"><div class="fill" style="width:' + overallPct + '%"></div></div><span style="font-size:.72rem;color:var(--muted);margin-left:6px">' + overallText + '</span></td>' +
-      '</tr>';
-    }).join('');
+        '<td style="color:#f85149">' + p.welded.toLocaleString() + '</td>' +
+        '<td style="color:#a371f7">' + p.painted.toLocaleString() + '</td>' +
+        '<td style="color:#e39b37">' + p.loaded.toLocaleString() + '</td>' +
+        '<td><strong>' + p.total.toLocaleString() + '</strong></td>' +
+      '</tr>'
+    ).join('');
+  }
+
+  function renderQuality(quality){
+    const labels = quality.map(p => shortDay(p.date));
+    chQuality.data.labels = labels;
+    chQuality.data.datasets[0].data = quality.map(p => p.passRate);
+    chQuality.update();
+    const totalInspections = quality.reduce((s, p) => s + p.total, 0);
+    const totalPassed = quality.reduce((s, p) => s + p.passed, 0);
+    const overall = totalInspections > 0 ? Math.round((totalPassed / totalInspections) * 1000) / 10 : null;
+    document.getElementById('qualitySummary').innerHTML =
+      totalInspections > 0
+        ? '<strong style="color:#fff">' + overall + '%</strong> overall (' + totalPassed + ' passed of ' + totalInspections + ' inspections this week)'
+        : 'No QC inspections recorded in the last 7 days.';
   }
 
   function setKpis(k){
@@ -301,13 +401,13 @@
     refreshBtn.disabled = true;
     refreshBtn.textContent = '↻ Loading…';
     try {
-      // Airtable-aggregated KPIs + Google-Sheets-driven progress run in parallel.
-      // The progress fetch is allowed to fail independently — if the sheet
-      // endpoint is down we still show all the other dashboard data.
+      // KPI/recent payload + management insights run in parallel. Either can
+      // fail independently — a degraded insights endpoint shouldn't blank the
+      // KPIs and vice versa.
       const qs = force ? '?fresh=1' : '';
-      const [data, progress] = await Promise.all([
+      const [data, insights] = await Promise.all([
         DSI.getJson('/api/dashboard-data' + qs),
-        DSI.getJson('/api/project-progress' + qs).catch(err => ({ _err: err }))
+        DSI.getJson('/api/insights' + qs).catch(err => ({ _err: err }))
       ]);
       setKpis(data.kpis);
       chLoading.data.datasets[0].data = [
@@ -328,12 +428,17 @@
       renderRecentPainting(data.recent.painting);
       renderRecentWelding(data.recent.welding || []);
       renderRecentQc(data.recent.qc || []);
-      if (progress && !progress._err) {
-        renderProjectTable(progress.projects || []);
+      if (insights && !insights._err) {
+        renderFunnel(insights.funnel || {});
+        renderThroughput(insights.throughput || {});
+        renderActiveProjects(insights.activeProjects || []);
+        renderQuality(insights.quality || []);
       } else {
-        document.getElementById('projTbody').innerHTML =
-          '<tr><td colspan="5" class="dsi-empty">⚠ Could not load progress sheet: ' +
-          DSI.esc((progress && progress._err && progress._err.message) || 'unknown error') + '</td></tr>';
+        const msg = (insights && insights._err && insights._err.message) || 'unknown error';
+        document.getElementById('activeTbody').innerHTML =
+          '<tr><td colspan="5" class="dsi-empty">⚠ Insights unavailable: ' + DSI.esc(msg) + '</td></tr>';
+        document.getElementById('funnelGaps').innerHTML = '⚠ Insights unavailable: ' + DSI.esc(msg);
+        document.getElementById('qualitySummary').innerHTML = '⚠ Insights unavailable.';
       }
       document.getElementById('dsi-updated').textContent = 'Updated ' + DSI.shortTime(data.generatedAt);
 

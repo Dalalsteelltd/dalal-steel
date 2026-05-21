@@ -1,17 +1,17 @@
 {
   "projects": [
-    { "id": "SPN004", "name": "SPN004", "totalBeams": 0 },
-    { "id": "SPN062", "name": "SPN062", "totalBeams": 0 },
-    { "id": "SBN003", "name": "SBN003", "totalBeams": 0 },
-    { "id": "SPN003", "name": "SPN003", "totalBeams": 0 },
-    { "id": "NG008",  "name": "NG008",  "totalBeams": 0 },
-    { "id": "NG014",  "name": "NG014",  "totalBeams": 0 },
-    { "id": "SBN025", "name": "SBN025", "totalBeams": 0 },
-    { "id": "SBN005", "name": "SBN005", "totalBeams": 0 },
-    { "id": "SBN002", "name": "SBN002", "totalBeams": 0 },
-    { "id": "SBN022", "name": "SBN022", "totalBeams": 0 },
-    { "id": "ST300",  "name": "ST300",  "totalBeams": 0 },
-    { "id": "SBN013", "name": "SBN013", "totalBeams": 0 },
-    { "id": "SPN023", "name": "SPN023", "totalBeams": 0 }
+    { "id": "SPN004", "name": "SPN004" },
+    { "id": "SPN062", "name": "SPN062" },
+    { "id": "SBN003", "name": "SBN003" },
+    { "id": "SPN003", "name": "SPN003" },
+    { "id": "NG008",  "name": "NG008"  },
+    { "id": "NG014",  "name": "NG014"  },
+    { "id": "SBN025", "name": "SBN025" },
+    { "id": "SBN005", "name": "SBN005" },
+    { "id": "SBN002", "name": "SBN002" },
+    { "id": "SBN022", "name": "SBN022" },
+    { "id": "ST300",  "name": "ST300"  },
+    { "id": "SBN013", "name": "SBN013" },
+    { "id": "SPN023", "name": "SPN023" }
   ]
 }
