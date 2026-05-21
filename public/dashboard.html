@@ -89,15 +89,15 @@
     <div class="dsi-search-result" id="sResult"></div>
   </div>
 
-  <!-- Per-project rollup -->
+  <!-- Per-project rollup (Google Sheets-driven stage percentages) -->
   <div class="dsi-chart-card" style="margin-bottom:22px">
-    <h4>🏗️ Per-project rollup</h4>
+    <h4>🏗️ Per-project rollup — stage progress</h4>
     <div class="dsi-project-table">
       <table>
         <thead>
-          <tr><th>Project</th><th>QC Records</th><th>Passed</th><th>Failed</th><th>Welded</th><th>Loaded</th><th>Painted</th><th>Progress</th></tr>
+          <tr><th>Project</th><th>QC %</th><th>Welding %</th><th>Painting %</th><th>Overall %</th></tr>
         </thead>
-        <tbody id="projTbody"><tr><td colspan="8" class="dsi-empty">Loading…</td></tr></tbody>
+        <tbody id="projTbody"><tr><td colspan="5" class="dsi-empty">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -252,22 +252,28 @@
     ).join('');
   }
 
-  function renderProjectTable(perProject){
+  // Render a single percentage cell. null/undefined → em-dash so missing rows
+  // in the Google Sheet don't masquerade as 0%.
+  function pctCell(v){
+    if (v === null || v === undefined || v === '') return '<td style="color:var(--muted)">—</td>';
+    const n = Number(v);
+    if (!isFinite(n)) return '<td style="color:var(--muted)">—</td>';
+    return '<td>' + (Math.round(n * 10) / 10) + '%</td>';
+  }
+
+  function renderProjectTable(projects){
     const body = document.getElementById('projTbody');
-    if (!perProject || !perProject.length) { body.innerHTML = '<tr><td colspan="8" class="dsi-empty">No project data.</td></tr>'; return; }
-    body.innerHTML = perProject.map(p => {
-      const done = (Number(p.accepted) || 0) + (Number(p.painted) || 0);
-      const total = Math.max((Number(p.qcCount) || 0), done);
-      const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+    if (!projects || !projects.length) { body.innerHTML = '<tr><td colspan="5" class="dsi-empty">No project data in PROJECT_PROGRESS sheet.</td></tr>'; return; }
+    body.innerHTML = projects.map(p => {
+      const overall = (p.overall === null || p.overall === undefined) ? null : Number(p.overall);
+      const overallPct = overall === null || !isFinite(overall) ? 0 : Math.max(0, Math.min(100, overall));
+      const overallText = overall === null || !isFinite(overall) ? '—' : (Math.round(overall * 10) / 10) + '%';
       return '<tr>' +
         '<td><span class="dsi-pill">' + DSI.esc(p.project) + '</span></td>' +
-        '<td>' + DSI.esc(p.qcCount) + '</td>' +
-        '<td style="color:#3fb950">' + DSI.esc(p.accepted) + '</td>' +
-        '<td style="color:#f85149">' + DSI.esc(p.rejected) + '</td>' +
-        '<td>' + DSI.esc(p.welded || 0) + '</td>' +
-        '<td>' + DSI.esc(p.loaded || 0) + '</td>' +
-        '<td>' + DSI.esc(p.painted || 0) + '</td>' +
-        '<td><div class="progressbar"><div class="fill" style="width:' + pct + '%"></div></div><span style="font-size:.72rem;color:var(--muted);margin-left:6px">' + pct + '%</span></td>' +
+        pctCell(p.qc) +
+        pctCell(p.welding) +
+        pctCell(p.painting) +
+        '<td><div class="progressbar"><div class="fill" style="width:' + overallPct + '%"></div></div><span style="font-size:.72rem;color:var(--muted);margin-left:6px">' + overallText + '</span></td>' +
       '</tr>';
     }).join('');
   }
@@ -295,7 +301,14 @@
     refreshBtn.disabled = true;
     refreshBtn.textContent = '↻ Loading…';
     try {
-      const data = await DSI.getJson('/api/dashboard-data' + (force ? '?fresh=1' : ''));
+      // Airtable-aggregated KPIs + Google-Sheets-driven progress run in parallel.
+      // The progress fetch is allowed to fail independently — if the sheet
+      // endpoint is down we still show all the other dashboard data.
+      const qs = force ? '?fresh=1' : '';
+      const [data, progress] = await Promise.all([
+        DSI.getJson('/api/dashboard-data' + qs),
+        DSI.getJson('/api/project-progress' + qs).catch(err => ({ _err: err }))
+      ]);
       setKpis(data.kpis);
       chLoading.data.datasets[0].data = [
         data.loadingByStatus.Pending,
@@ -315,7 +328,13 @@
       renderRecentPainting(data.recent.painting);
       renderRecentWelding(data.recent.welding || []);
       renderRecentQc(data.recent.qc || []);
-      renderProjectTable(data.perProject);
+      if (progress && !progress._err) {
+        renderProjectTable(progress.projects || []);
+      } else {
+        document.getElementById('projTbody').innerHTML =
+          '<tr><td colspan="5" class="dsi-empty">⚠ Could not load progress sheet: ' +
+          DSI.esc((progress && progress._err && progress._err.message) || 'unknown error') + '</td></tr>';
+      }
       document.getElementById('dsi-updated').textContent = 'Updated ' + DSI.shortTime(data.generatedAt);
 
       // Cache + source-health indicators.
