@@ -38,13 +38,19 @@ function last7Days() {
   return days;
 }
 
-// Extract a YYYY-MM-DD prefix from whatever Airtable returns. Both date-only
-// fields ("2026-05-15") and datetime fields ("2026-05-15T08:23:00.000Z")
-// have the date as their first 10 characters.
+// Extract a YYYY-MM-DD prefix from whatever Airtable returns. Forms use
+// <input type="datetime-local"> which produces "2026-05-21T14:30" — the
+// first 10 chars are the right date. Airtable's own metadata fields use
+// "2026-05-21T08:23:00.000Z". Both fall into the fast path. The Date()
+// fallback handles any other format (US-style, localized, etc.) defensively.
 function dayKey(value) {
   if (!value) return '';
-  const s = String(value);
-  return s.length >= 10 ? s.slice(0, 10) : '';
+  const s = String(value).trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
 }
 
 module.exports = async function handler(req, res) {
@@ -109,20 +115,20 @@ module.exports = async function handler(req, res) {
       }).catch(() => [])
     ]);
 
-    // ── Funnel: total accepted units at each stage. Painted uses Quantity
-    // Completed (partial-batch friendly); the others use Total Quantity.
+    // ── Funnel: total units at each stage. "Welded" counts every welded unit
+    // regardless of inspection result (rework / rejects are still welding
+    // work that happened — quality is shown separately in the QC trend).
+    // "Painted" sums Quantity Completed across all batches, so partial work
+    // is counted instead of waiting for the whole batch to be Completed.
+    // Loading distinguishes "loaded" (left the facility) from "delivered".
     let weldedTotal = 0, paintedTotal = 0, loadedTotal = 0, deliveredTotal = 0;
     welding.forEach(rec => {
       const f = rec.fields || {};
-      if (f['Inspection Result'] === 'Accepted') {
-        weldedTotal += Number(f['Total Quantity']) || 0;
-      }
+      weldedTotal += Number(f['Total Quantity']) || 0;
     });
     painting.forEach(rec => {
       const f = rec.fields || {};
-      if (f['Coating Status'] === 'Completed') {
-        paintedTotal += Number(f['Quantity Completed']) || 0;
-      }
+      paintedTotal += Number(f['Quantity Completed']) || 0;
     });
     loading.forEach(rec => {
       const f = rec.fields || {};
@@ -132,7 +138,8 @@ module.exports = async function handler(req, res) {
       if (status === 'Delivered') deliveredTotal += qty;
     });
 
-    // ── 7-day throughput: per-day welded/painted/loaded units.
+    // ── 7-day throughput: per-day welded / painted / loaded units. Same
+    // counting rules as the funnel so the daily series sums to the totals.
     const empty7 = () => days.map(d => ({ date: d, value: 0 }));
     const weldedSeries = empty7();
     const paintedSeries = empty7();
@@ -142,13 +149,11 @@ module.exports = async function handler(req, res) {
 
     welding.forEach(rec => {
       const f = rec.fields || {};
-      if (f['Inspection Result'] !== 'Accepted') return;
       const k = dayKey(f['Weld Date']);
       if (k in dayIdx) weldedSeries[dayIdx[k]].value += Number(f['Total Quantity']) || 0;
     });
     painting.forEach(rec => {
       const f = rec.fields || {};
-      if (f['Coating Status'] !== 'Completed') return;
       const k = dayKey(f['Completion Date']);
       if (k in dayIdx) paintedSeries[dayIdx[k]].value += Number(f['Quantity Completed']) || 0;
     });
@@ -160,26 +165,28 @@ module.exports = async function handler(req, res) {
       if (k in dayIdx) loadedSeries[dayIdx[k]].value += Number(f['Total Quantity']) || 0;
     });
 
-    // ── Active projects (last 7 days): rank by total units processed across
-    // welding + painting + loading. Counts work, not just records.
+    // ── Active projects (last 7 days): rank by total units the project
+    // touched in the window. No status filter — "active" means activity, not
+    // necessarily completed work. A project with five In-Progress paint
+    // batches and a Pending loading batch should still show as active.
     const activity = Object.create(null);
     Object.keys(PROJECT_TABLES).forEach(p => {
       activity[p] = { project: p, welded: 0, painted: 0, loaded: 0 };
     });
-    const bump = (recs, qtyField, statusField, statusOk, dateField, key) => {
+    const windowEnd = days[days.length - 1];
+    const inWindow = k => k && k >= windowStart && k <= windowEnd;
+    const bumpActive = (recs, qtyField, dateField, key) => {
       recs.forEach(rec => {
         const f = rec.fields || {};
-        if (!statusOk(f[statusField])) return;
-        const k = dayKey(f[dateField]);
-        if (k < windowStart) return;
+        if (!inWindow(dayKey(f[dateField]))) return;
         const p = f['Project'];
         if (!activity[p]) return;
         activity[p][key] += Number(f[qtyField]) || 0;
       });
     };
-    bump(welding, 'Total Quantity', 'Inspection Result', s => s === 'Accepted', 'Weld Date', 'welded');
-    bump(painting, 'Quantity Completed', 'Coating Status', s => s === 'Completed', 'Completion Date', 'painted');
-    bump(loading, 'Total Quantity', 'Loading Status', s => s === 'Loaded' || s === 'Delivered', 'Loading Date', 'loaded');
+    bumpActive(welding, 'Total Quantity', 'Weld Date', 'welded');
+    bumpActive(painting, 'Quantity Completed', 'Completion Date', 'painted');
+    bumpActive(loading, 'Total Quantity', 'Loading Date', 'loaded');
 
     const activeProjects = Object.values(activity)
       .map(p => ({ ...p, total: p.welded + p.painted + p.loaded }))
