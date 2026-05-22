@@ -10,7 +10,7 @@
   "crons": [
     {
       "path": "/api/cron/reconcile-painting-loading",
-      "schedule": "0 * * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }
