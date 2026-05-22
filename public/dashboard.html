@@ -68,7 +68,7 @@
     <div class="dsi-kpi kp-blue"><div class="dsi-kpi-value" id="kpiTotal">0</div><div class="dsi-kpi-label">Total Beams (QC)</div><div class="dsi-kpi-sub">across all projects</div></div>
     <div class="dsi-kpi kp-green"><div class="dsi-kpi-value" id="kpiPassed">0</div><div class="dsi-kpi-label">Passed QC</div><div class="dsi-kpi-sub" id="kpiPassedPct">—</div></div>
     <div class="dsi-kpi kp-red"><div class="dsi-kpi-value" id="kpiFailed">0</div><div class="dsi-kpi-label">Failed QC</div><div class="dsi-kpi-sub" id="kpiReworked">— reworked</div></div>
-    <div class="dsi-kpi kp-red"><div class="dsi-kpi-value" id="kpiWelded">0</div><div class="dsi-kpi-label">Total Welded</div><div class="dsi-kpi-sub" id="kpiWeldBatches">— batches</div></div>
+    <div class="dsi-kpi kp-red"><div class="dsi-kpi-value" id="kpiWelded">0</div><div class="dsi-kpi-label">Total Robotic Welding</div><div class="dsi-kpi-sub" id="kpiWeldBatches">— batches</div></div>
     <div class="dsi-kpi kp-yellow"><div class="dsi-kpi-value" id="kpiLoaded">0</div><div class="dsi-kpi-label">Total Loaded</div><div class="dsi-kpi-sub" id="kpiLoadingBatches">— batches</div></div>
     <div class="dsi-kpi kp-teal"><div class="dsi-kpi-value" id="kpiDelivered">0</div><div class="dsi-kpi-label">Delivered</div><div class="dsi-kpi-sub" id="kpiPending">— pending</div></div>
     <div class="dsi-kpi kp-violet"><div class="dsi-kpi-value" id="kpiPainted">0</div><div class="dsi-kpi-label">Total Painted</div><div class="dsi-kpi-sub" id="kpiPaintBatches">— batches</div></div>
@@ -130,7 +130,7 @@
               <th title="QC Assembly inspections">QC Asm</th>
               <th title="QC Fabrication inspections">QC Fab</th>
               <th title="QC CO2 Welding inspections">QC Weld</th>
-              <th title="Robotic welding units">Welded</th>
+              <th title="Robotic welding units">Robotic Welding</th>
               <th>Painted</th>
               <th>Loaded</th>
               <th>Total</th>
@@ -230,12 +230,16 @@
 
   // Production funnel — horizontal bars top→down: QC stages first (Assembly,
   // Fabrication, CO2 Welding) so a manager sees QC volume entering the line
-  // before robotic welding / painting / loading / delivery.
+  // before robotic welding / painting / loading / delivery. "Pending Loading"
+  // sits between Painted and Loaded — units finished in paint but not yet
+  // dispatched. The Painted → Pending Loading drop-off shows in-progress paint
+  // work; the Pending Loading → Loaded drop-off shows queue depth waiting for
+  // trucks.
   const chFunnel = new Chart(document.getElementById('chFunnel').getContext('2d'), {
     type: 'bar',
-    data: { labels: ['QC Assembly','QC Fabrication','QC CO2 Welding','Welded','Painted','Loaded','Delivered'],
-      datasets: [{ label: 'Units / Records', data: [0,0,0,0,0,0,0],
-        backgroundColor: ['#58a6ff','#1f6feb','#79c0ff','#f85149','#a371f7','#e39b37','#3fb950'],
+    data: { labels: ['QC Assembly','QC Fabrication','QC CO2 Welding','Robotic Welding','Painted','Pending Loading','Loaded','Delivered'],
+      datasets: [{ label: 'Units / Records', data: [0,0,0,0,0,0,0,0],
+        backgroundColor: ['#58a6ff','#1f6feb','#79c0ff','#f85149','#a371f7','#d29922','#e39b37','#3fb950'],
         borderRadius: 6 }] },
     options: { indexAxis: 'y', responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false} },
@@ -243,18 +247,19 @@
                y:{ grid:{ display:false } } } }
   });
 
-  // 7-day throughput — six series. QC stages count inspection records per
+  // 7-day throughput — seven series. QC stages count inspection records per
   // day; production stages count units. Different units on the same axis is
   // a compromise so the manager has one chart instead of two — colours and
   // the legend disambiguate which line means what.
   const chThroughput = new Chart(document.getElementById('chThroughput').getContext('2d'), {
     type: 'line',
     data: { labels: [], datasets: [
-      { label:'QC Assembly', data:[], borderColor:'#58a6ff', backgroundColor:'rgba(88,166,255,.15)', tension:.35, fill:false, pointRadius:3 },
-      { label:'QC Fabrication', data:[], borderColor:'#1f6feb', backgroundColor:'rgba(31,111,235,.15)', tension:.35, fill:false, pointRadius:3 },
-      { label:'QC CO2 Welding', data:[], borderColor:'#79c0ff', backgroundColor:'rgba(121,192,255,.15)', tension:.35, fill:false, pointRadius:3 },
-      { label:'Welded', data:[], borderColor:'#f85149', backgroundColor:'rgba(248,81,73,.15)', tension:.35, fill:false, pointRadius:3 },
+      { label:'QC Assembly', data:[], borderColor:'#7d8590', backgroundColor:'rgba(125,133,144,.15)', tension:.35, fill:false, pointRadius:3 },
+      { label:'QC Fabrication', data:[], borderColor:'#e3b341', backgroundColor:'rgba(227,179,65,.15)', tension:.35, fill:false, pointRadius:3 },
+      { label:'QC CO2 Welding', data:[], borderColor:'#3fb950', backgroundColor:'rgba(63,185,80,.15)', tension:.35, fill:false, pointRadius:3 },
+      { label:'Robotic Welding', data:[], borderColor:'#58a6ff', backgroundColor:'rgba(88,166,255,.15)', tension:.35, fill:false, pointRadius:3 },
       { label:'Painted', data:[], borderColor:'#a371f7', backgroundColor:'rgba(163,113,247,.15)', tension:.35, fill:false, pointRadius:3 },
+      { label:'Pending Loading', data:[], borderColor:'#56d4dc', backgroundColor:'rgba(86,212,220,.15)', tension:.35, fill:false, pointRadius:3, borderDash:[6,4] },
       { label:'Loaded', data:[], borderColor:'#e39b37', backgroundColor:'rgba(227,155,55,.15)', tension:.35, fill:false, pointRadius:3 }
     ]},
     options: { responsive:true, maintainAspectRatio:false,
@@ -394,8 +399,9 @@
       { label:'QC Assembly',     value: funnel.qcAssembly     || 0 },
       { label:'QC Fabrication',  value: funnel.qcFabrication  || 0 },
       { label:'QC CO2 Welding',  value: funnel.qcWelding      || 0 },
-      { label:'Welded',          value: funnel.welded         || 0 },
+      { label:'Robotic Welding', value: funnel.welded         || 0 },
       { label:'Painted',         value: funnel.painted        || 0 },
+      { label:'Pending Loading', value: funnel.pendingLoading || 0 },
       { label:'Loaded',          value: funnel.loaded         || 0 },
       { label:'Delivered',       value: funnel.delivered      || 0 }
     ];
@@ -417,12 +423,13 @@
   function renderThroughput(throughput){
     const series = throughput.qcAssembly || throughput.welded || [];
     chThroughput.data.labels = series.map(p => shortDay(p.date));
-    chThroughput.data.datasets[0].data = (throughput.qcAssembly    || []).map(p => p.value);
-    chThroughput.data.datasets[1].data = (throughput.qcFabrication || []).map(p => p.value);
-    chThroughput.data.datasets[2].data = (throughput.qcWelding     || []).map(p => p.value);
-    chThroughput.data.datasets[3].data = (throughput.welded        || []).map(p => p.value);
-    chThroughput.data.datasets[4].data = (throughput.painted       || []).map(p => p.value);
-    chThroughput.data.datasets[5].data = (throughput.loaded        || []).map(p => p.value);
+    chThroughput.data.datasets[0].data = (throughput.qcAssembly     || []).map(p => p.value);
+    chThroughput.data.datasets[1].data = (throughput.qcFabrication  || []).map(p => p.value);
+    chThroughput.data.datasets[2].data = (throughput.qcWelding      || []).map(p => p.value);
+    chThroughput.data.datasets[3].data = (throughput.welded         || []).map(p => p.value);
+    chThroughput.data.datasets[4].data = (throughput.painted        || []).map(p => p.value);
+    chThroughput.data.datasets[5].data = (throughput.pendingLoading || []).map(p => p.value);
+    chThroughput.data.datasets[6].data = (throughput.loaded         || []).map(p => p.value);
     chThroughput.update();
   }
 

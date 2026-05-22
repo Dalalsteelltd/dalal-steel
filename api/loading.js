@@ -91,12 +91,17 @@ module.exports = async function handler(req, res) {
 
   if (!batchId) return res.status(400).json({ error: 'Batch ID is required.' });
   if (!ALLOWED_PROJECTS.has(project)) return res.status(400).json({ error: 'Invalid project number.' });
-  if (!vehicle) return res.status(400).json({ error: 'Vehicle number is required.' });
-  if (!destination) return res.status(400).json({ error: 'Destination is required.' });
   if (!beamUidsRaw) return res.status(400).json({ error: 'At least one Beam UID is required.' });
   if (!ALLOWED_STATUS.has(status)) return res.status(400).json({ error: 'Invalid loading status.' });
   if (!loadedBy) return res.status(400).json({ error: 'Loaded By is required.' });
   if (!loadingDate) return res.status(400).json({ error: 'Loading Date is required.' });
+  // Vehicle Number and Destination are deferred for Pending rows so the
+  // painting → loading handoff can stage a queue entry before the loading
+  // team has assigned a truck/route. Required for any later status.
+  if (status !== 'Pending') {
+    if (!vehicle) return res.status(400).json({ error: 'Vehicle number is required.' });
+    if (!destination) return res.status(400).json({ error: 'Destination is required.' });
+  }
 
   const { items, totalQty } = parseBatch(beamUidsRaw);
   if (!items.length) return res.status(400).json({ error: 'No valid Beam UIDs detected in the batch entry.' });
