@@ -197,8 +197,10 @@ module.exports = async function handler(req, res) {
     // welding work that happened — quality is shown separately in the QC
     // trend). "Painted" sums Quantity Completed across all batches, so
     // partial work is counted instead of waiting for batches to be Completed.
-    // Loading distinguishes "loaded" (left the facility) from "delivered".
-    let weldedTotal = 0, paintedTotal = 0, loadedTotal = 0, deliveredTotal = 0;
+    // "Pending Loading" surfaces the queue of finished-paint units staged for
+    // dispatch (auto-created when painting completes); Loaded/Delivered cover
+    // post-dispatch state.
+    let weldedTotal = 0, paintedTotal = 0, pendingLoadingTotal = 0, loadedTotal = 0, deliveredTotal = 0;
     welding.forEach(rec => {
       const f = rec.fields || {};
       weldedTotal += Number(f['Total Quantity']) || 0;
@@ -211,6 +213,7 @@ module.exports = async function handler(req, res) {
       const f = rec.fields || {};
       const status = f['Loading Status'];
       const qty = Number(f['Total Quantity']) || 0;
+      if (status === 'Pending') pendingLoadingTotal += qty;
       if (status === 'Loaded' || status === 'Delivered') loadedTotal += qty;
       if (status === 'Delivered') deliveredTotal += qty;
     });
@@ -219,6 +222,7 @@ module.exports = async function handler(req, res) {
     // the funnel so the daily series sums up to the cumulative totals.
     const weldedSeries = empty7();
     const paintedSeries = empty7();
+    const pendingLoadingSeries = empty7();
     const loadedSeries = empty7();
 
     welding.forEach(rec => {
@@ -234,9 +238,11 @@ module.exports = async function handler(req, res) {
     loading.forEach(rec => {
       const f = rec.fields || {};
       const status = f['Loading Status'];
-      if (status !== 'Loaded' && status !== 'Delivered') return;
       const k = dayKey(f['Loading Date']);
-      if (k in dayIdx) loadedSeries[dayIdx[k]].value += Number(f['Total Quantity']) || 0;
+      if (!(k in dayIdx)) return;
+      const qty = Number(f['Total Quantity']) || 0;
+      if (status === 'Pending') pendingLoadingSeries[dayIdx[k]].value += qty;
+      else if (status === 'Loaded' || status === 'Delivered') loadedSeries[dayIdx[k]].value += qty;
     });
 
     // ── Active projects (last 7 days): rank by total activity in the window
@@ -274,6 +280,7 @@ module.exports = async function handler(req, res) {
         qcWelding: qcWeldingTotal, // CO2 / manual welding inspections
         welded: weldedTotal,
         painted: paintedTotal,
+        pendingLoading: pendingLoadingTotal,
         loaded: loadedTotal,
         delivered: deliveredTotal
       },
@@ -283,6 +290,7 @@ module.exports = async function handler(req, res) {
         qcWelding: qcWeldingSeries,
         welded: weldedSeries,
         painted: paintedSeries,
+        pendingLoading: pendingLoadingSeries,
         loaded: loadedSeries
       },
       activeProjects,

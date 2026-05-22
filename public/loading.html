@@ -257,8 +257,12 @@
       idempotencyKey: pendingIdempotencyKey
     };
     if (!payload.project) return DSI.toast('Please select a project number', 'error');
-    if (!payload.batchId || !payload.vehicle || !payload.destination || !payload.beamUidsRaw || !payload.status || !payload.loadedBy || !payload.loadingDate)
+    if (!payload.batchId || !payload.beamUidsRaw || !payload.status || !payload.loadedBy || !payload.loadingDate)
       return DSI.toast('Please fill in all required fields', 'error');
+    // Vehicle / destination are deferred for Pending rows — the loading team
+    // fills them in when assigning a truck. Required for any later status.
+    if (payload.status !== 'Pending' && (!payload.vehicle || !payload.destination))
+      return DSI.toast('Vehicle Number and Destination are required for ' + payload.status + ' batches', 'error');
 
     const parsed = DSI.parseBatch(payload.beamUidsRaw);
     if (!parsed.items.length) return DSI.toast('No valid Beam UIDs in the batch entry', 'error');
