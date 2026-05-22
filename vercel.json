@@ -6,5 +6,11 @@
     { "source": "/welding", "destination": "/welding.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/dashboard/login", "destination": "/dashboard-login.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/reconcile-painting-loading",
+      "schedule": "0 6 * * *"
+    }
   ]
 }

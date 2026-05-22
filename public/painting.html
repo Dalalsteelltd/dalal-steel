@@ -303,7 +303,25 @@
         timestamp:         new Date().toISOString()
       });
       const tag = resp.deduplicated ? ' (already saved earlier)' : '';
-      DSI.toast('✓ Batch ' + payload.paintBatchId + ' saved (' + resp.quantityCompleted + '/' + resp.totalQty + ' done)' + tag, 'success');
+      // Surface the painting → loading mirror result. The mirror only runs
+      // when Coating Status = Completed (resp.autoLoading is null otherwise)
+      // and is best-effort: if it failed, we show a warning toast so the
+      // operator knows the queue did not stage and the hourly cron will pick
+      // it up — or they can re-submit.
+      let mirrorNote = '';
+      if (resp.autoLoading && resp.autoLoading.error) {
+        mirrorNote = ' · ⚠ loading queue not staged';
+      } else if (resp.autoLoading && resp.autoLoading.deduplicated) {
+        mirrorNote = ' · loading queue already staged';
+      } else if (resp.autoLoading && resp.autoLoading.id) {
+        mirrorNote = ' · loading queue staged';
+      }
+      DSI.toast('✓ Batch ' + payload.paintBatchId + ' saved (' + resp.quantityCompleted + '/' + resp.totalQty + ' done)' + tag + mirrorNote, 'success');
+      if (resp.autoLoading && resp.autoLoading.error) {
+        // Follow-up toast so the failure detail is visible without crowding
+        // the primary success message.
+        setTimeout(() => DSI.toast('⚠ Loading mirror failed: ' + resp.autoLoading.error + ' — reconciliation cron will retry.', 'error'), 600);
+      }
       pendingIdempotencyKey = null;
       resetForm();
       render();

@@ -4,13 +4,13 @@
 // Side effect: when Coating Status is "Completed", the same batch is mirrored
 // into Loading_Batches as a Pending row (no vehicle/destination yet) so the
 // loading team's queue automatically reflects finished paintwork. The mirror
-// row uses a deterministic idempotency key derived from the Paint Batch ID
-// so retries / re-submissions of the same paint batch never duplicate it.
+// is best-effort here; the reconciliation cron at
+// /api/cron/reconcile-painting-loading sweeps any rows we miss.
 
 const { findByIdempotencyKey } = require('../lib/dashboard-helpers');
+const { ensurePendingLoadingForPainting } = require('../lib/painting-loading-mirror');
 
 const TABLE = 'Painting_Batches';
-const LOADING_TABLE = 'Loading_Batches';
 
 const ALLOWED_PROJECTS = new Set([
   'SPN004','SPN062','SPN003','NG008','NG014','SBN025',
@@ -185,54 +185,3 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 };
-
-// Insert (or no-op via idempotency lookup) a Pending row in Loading_Batches
-// that mirrors a completed painting batch. Vehicle Number and Destination
-// are intentionally omitted — the loading team fills those in when they
-// assign a truck. The auto-row's Batch ID and Idempotency Key are both
-// derived from the source paintBatchId so the mirror is a pure function of
-// the painting submission.
-async function ensurePendingLoadingForPainting(args) {
-  const {
-    paintBatchId, project, beamUidsRaw, parsedSerialised, totalQty,
-    completionDate, notes, AIRTABLE_API_KEY, AIRTABLE_BASE_ID
-  } = args;
-
-  const autoKey = `paint-auto:${paintBatchId}`;
-  const existing = await findByIdempotencyKey(LOADING_TABLE, autoKey);
-  if (existing) {
-    return { deduplicated: true, id: existing.id };
-  }
-
-  const autoBatchId = (`LD-AUTO-${paintBatchId}`).slice(0, 64);
-  const fields = {
-    'Batch ID': autoBatchId,
-    'Project': project,
-    'Beam UIDs': beamUidsRaw,
-    'Parsed UIDs': parsedSerialised,
-    'Total Quantity': totalQty,
-    'Loading Status': 'Pending',
-    'Loaded By': 'Auto (painting)',
-    'Loading Date': completionDate || new Date().toISOString(),
-    'Notes': `Auto-created from painting batch ${paintBatchId}` +
-             (notes ? `\n\nPainting notes: ${notes}` : ''),
-    'Idempotency Key': autoKey
-  };
-
-  const airtableRes = await fetch(
-    `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${encodeURIComponent(LOADING_TABLE)}`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${AIRTABLE_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ fields })
-    }
-  );
-  const data = await airtableRes.json();
-  if (!airtableRes.ok) {
-    throw new Error((data && data.error && data.error.message) || `Airtable error ${airtableRes.status}`);
-  }
-  return { id: data.id, batchId: autoBatchId };
-}
