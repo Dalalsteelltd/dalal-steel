@@ -29,6 +29,7 @@
     <div class="dsi-title"><h1>Dalal Steel Industries</h1><span>Manager Dashboard — Live Operations</span></div>
   </div>
   <div class="dsi-header-right">
+    <span class="dsi-badge dsi-live-badge"><span class="dsi-live-dot"></span>LIVE</span>
     <span class="dsi-badge" id="dsi-updated">Updated —</span>
     <span class="dsi-badge" id="dsi-source-warn" style="display:none;background:rgba(248,81,73,.18);border-color:#f85149;color:#f85149" title="Some data sources failed">⚠ <span id="dsi-source-warn-text">sources</span></span>
     <span class="dsi-badge" id="dsi-cache-tag" style="display:none;background:rgba(125,133,144,.18);border-color:#7d8590;color:#7d8590" title="Served from short cache to limit Airtable load">⚡ cached</span>
@@ -208,9 +209,13 @@
   Chart.defaults.font.family = 'Barlow,Helvetica,sans-serif';
 
   // Honour OS-level reduced-motion. Falls back to a 1ms duration so transitions
-  // still "happen" (so update() callbacks fire) but feel instant.
+  // still "happen" (so update() callbacks fire) but feel instant. LOOP is the
+  // master switch for continuous "live stream" oscillations on every chart —
+  // line tension, bar borderRadius, doughnut borderWidth — so the whole
+  // dashboard appears to breathe as long as motion is permitted.
   const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const D = m => REDUCE_MOTION ? 1 : m;     // duration shorthand
+  const LOOP = !REDUCE_MOTION;              // continuous stream loops
   const STAGGER = (base) => REDUCE_MOTION
     ? 0
     : (ctx) => ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * base : 0;
@@ -223,6 +228,9 @@
         borderRadius: 6, hoverBackgroundColor: ['#f0ad4f','#79b8ff','#ff6b63','#56cc6a'] }] },
     options: { responsive:true, maintainAspectRatio:false,
       animation: { duration: D(1400), easing: 'easeOutQuart', delay: STAGGER(120) },
+      // Bars breathe — corners round and un-round continuously so the chart
+      // visibly pulses even while the underlying data is steady.
+      animations: { borderRadius: { duration: 3800, easing: 'easeInOutSine', from: 6, to: 14, loop: LOOP } },
       interaction: { mode: 'index', intersect: false },
       plugins:{ legend:{display:false},
                 tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1 } },
@@ -237,6 +245,9 @@
         borderWidth: 3, borderColor: '#0d1117', hoverOffset: 12, hoverBorderColor: '#161b22' }] },
     options: { responsive:true, maintainAspectRatio:false, cutout:'62%',
       animation: { animateRotate: true, animateScale: true, duration: D(1600), easing: 'easeOutQuart' },
+      // Slice gaps breathe wider/narrower, so the ring pulses subtly even when
+      // the data hasn't changed — a small continuous heartbeat.
+      animations: { borderWidth: { duration: 3500, easing: 'easeInOutSine', from: 1, to: 5, loop: LOOP } },
       plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{ size:11 } } },
                 tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1 } } }
   });
@@ -256,6 +267,7 @@
         borderRadius: 6 }] },
     options: { indexAxis: 'y', responsive:true, maintainAspectRatio:false,
       animation: { duration: D(1500), easing: 'easeOutQuart', delay: STAGGER(90) },
+      animations: { borderRadius: { duration: 4200, easing: 'easeInOutSine', from: 6, to: 14, loop: LOOP } },
       interaction: { mode: 'index', intersect: false },
       plugins:{ legend:{display:false},
                 tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1 } },
@@ -280,9 +292,13 @@
     ]},
     options: { responsive:true, maintainAspectRatio:false,
       animation: { duration: D(1500), easing: 'easeOutQuart' },
-      // Tension grows from straight (0) to curved (.35) during the initial
-      // draw — the lines visibly "unfurl" into shape rather than appearing flat.
-      animations: { tension: { duration: D(1200), easing: 'easeOutCubic', from: 0, to: 0.35, loop: false } },
+      // Continuous "stream" motion — tension oscillates between gentler and
+      // tighter curves so the lines visibly breathe, like a heart-rate trace,
+      // even while the underlying weekly totals are static between refreshes.
+      animations: {
+        tension: { duration: 3800, easing: 'easeInOutSine', from: 0.28, to: 0.46, loop: LOOP },
+        borderWidth: { duration: 3200, easing: 'easeInOutSine', from: 1.8, to: 2.6, loop: LOOP }
+      },
       interaction: { mode: 'index', intersect: false },
       plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:10, font:{ size:10 } } },
                 tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1 } },
@@ -300,7 +316,10 @@
     ]},
     options: { responsive:true, maintainAspectRatio:false,
       animation: { duration: D(1500), easing: 'easeOutQuart' },
-      animations: { tension: { duration: D(1200), easing: 'easeOutCubic', from: 0, to: 0.3, loop: false } },
+      animations: {
+        tension: { duration: 3600, easing: 'easeInOutSine', from: 0.22, to: 0.40, loop: LOOP },
+        borderWidth: { duration: 3000, easing: 'easeInOutSine', from: 2.0, to: 2.8, loop: LOOP }
+      },
       interaction: { mode: 'index', intersect: false },
       plugins:{ legend:{ display:false }, tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, callbacks:{
         label: ctx => ctx.parsed.y === null ? 'No inspections' : ctx.parsed.y + '% pass rate' } } },

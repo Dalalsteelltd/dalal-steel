@@ -664,11 +664,32 @@ body.landing .dept-mgr  .dsi-dept-icon{box-shadow:0 0 0 1px rgba(163,130,255,.28
  * prefers-reduced-motion via the override below.
  * ───────────────────────────────────────────────────────────────────── */
 
-.dsi-chart-card{transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease}
+.dsi-chart-card{position:relative;overflow:hidden;transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease}
 .dsi-chart-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.16);
   box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 18px 44px rgba(0,0,0,.36), 0 0 0 1px rgba(163,130,255,.10)}
-.dsi-chart-card canvas{transition:filter .2s ease}
-.dsi-chart-card:hover canvas{filter:drop-shadow(0 6px 18px rgba(163,130,255,.18))}
+/* Keep heading + canvas above the streaming-light overlay. */
+.dsi-chart-card > *{position:relative;z-index:1}
+
+/* Continuous "live stream" diagonal light sweep across each chart card.
+ * Slow gradient pan suggests data flowing through. The ::before sweep does
+ * a brighter highlight pass, ::after holds the soft ambient stream tint. */
+.dsi-chart-card::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:linear-gradient(115deg,
+    transparent 38%, rgba(163,130,255,.14) 50%, transparent 62%);
+  background-size:240% 100%;
+  animation:dsiStreamSweep 7s linear infinite;
+}
+@keyframes dsiStreamSweep{
+  0%   {background-position:240% 0}
+  100% {background-position:-140% 0}
+}
+.dsi-chart-card canvas{animation:dsiCanvasBreath 4.2s ease-in-out infinite;transition:filter .2s ease}
+.dsi-chart-card:hover canvas{animation:none;filter:drop-shadow(0 6px 18px rgba(163,130,255,.22))}
+@keyframes dsiCanvasBreath{
+  0%,100% {filter:drop-shadow(0 0 0 rgba(163,130,255,0))}
+  50%     {filter:drop-shadow(0 4px 14px rgba(163,130,255,.22))}
+}
 
 /* Brief violet glow when the card's data refreshes. */
 @keyframes dsiCardFlash{
@@ -678,7 +699,14 @@ body.landing .dept-mgr  .dsi-dept-icon{box-shadow:0 0 0 1px rgba(163,130,255,.28
 }
 .dsi-chart-card.dsi-flash{animation:dsiCardFlash 1s ease-out}
 
-/* KPI cards: subtle lift on hover so the strip feels responsive. */
+/* KPI cards: subtle lift on hover so the strip feels responsive, plus a
+ * gentle continuous text-shadow breath on the value so the strip looks
+ * alive even when numbers are steady between refreshes. */
+.dsi-kpi-value{animation:dsiKpiBreath 3.5s ease-in-out infinite}
+@keyframes dsiKpiBreath{
+  0%,100% {text-shadow:0 0 0 rgba(255,255,255,0)}
+  50%     {text-shadow:0 0 12px rgba(255,255,255,.16)}
+}
 .dsi-kpi{transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease}
 .dsi-kpi:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.16);
   box-shadow:0 12px 28px rgba(0,0,0,.32)}
@@ -708,6 +736,27 @@ body.landing .dept-mgr  .dsi-dept-icon{box-shadow:0 0 0 1px rgba(163,130,255,.28
   50%{box-shadow:0 0 0 4px rgba(163,130,255,.10)}
 }
 #dsi-updated{animation:dsiUpdatedPulse 2.4s ease-in-out infinite}
+
+/* LIVE pill in the header — red dot with an expanding ring that fades out,
+ * mimicking a broadcasting-live indicator. Reinforces that the dashboard
+ * is streaming, not a static snapshot. */
+.dsi-live-badge{
+  color:#f85149 !important;
+  border-color:rgba(248,81,73,.45) !important;
+  background:rgba(248,81,73,.10) !important;
+  display:inline-flex;align-items:center;gap:7px;
+}
+.dsi-live-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#f85149;flex-shrink:0;
+  box-shadow:0 0 0 0 rgba(248,81,73,.7);
+  animation:dsiLiveBlink 1.4s ease-out infinite;
+}
+@keyframes dsiLiveBlink{
+  0%   {box-shadow:0 0 0 0 rgba(248,81,73,.6); opacity:1}
+  60%  {box-shadow:0 0 0 9px rgba(248,81,73,0); opacity:.75}
+  100% {box-shadow:0 0 0 0 rgba(248,81,73,0); opacity:1}
+}
 
 /* Section entry — stagger the chart rows in on first paint. */
 @keyframes dsiRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
