@@ -656,6 +656,71 @@ body.landing .dept-mgr  .dsi-dept-icon{box-shadow:0 0 0 1px rgba(163,130,255,.28
   border-radius:4px;padding:1px 5px;font-family:'Barlow',monospace;color:var(--text);
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+ * Manager-dashboard motion. Hover lifts, pulsing live dots, KPI value
+ * highlight on update, and a brief border glow on chart cards when their
+ * dataset is refreshed. Pairs with the Chart.js entry animations + JS
+ * count-up tween in dashboard.html. All effects collapse to instant under
+ * prefers-reduced-motion via the override below.
+ * ───────────────────────────────────────────────────────────────────── */
+
+.dsi-chart-card{transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease}
+.dsi-chart-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.16);
+  box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 18px 44px rgba(0,0,0,.36), 0 0 0 1px rgba(163,130,255,.10)}
+.dsi-chart-card canvas{transition:filter .2s ease}
+.dsi-chart-card:hover canvas{filter:drop-shadow(0 6px 18px rgba(163,130,255,.18))}
+
+/* Brief violet glow when the card's data refreshes. */
+@keyframes dsiCardFlash{
+  0%{box-shadow:0 0 0 0 rgba(163,130,255,.0), 0 14px 36px rgba(0,0,0,.32)}
+  35%{box-shadow:0 0 0 2px rgba(163,130,255,.35), 0 18px 44px rgba(163,130,255,.18)}
+  100%{box-shadow:0 0 0 0 rgba(163,130,255,0), 0 14px 36px rgba(0,0,0,.32)}
+}
+.dsi-chart-card.dsi-flash{animation:dsiCardFlash 1s ease-out}
+
+/* KPI cards: subtle lift on hover so the strip feels responsive. */
+.dsi-kpi{transition:transform .22s ease, border-color .22s ease, box-shadow .22s ease}
+.dsi-kpi:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.16);
+  box-shadow:0 12px 28px rgba(0,0,0,.32)}
+.dsi-kpi-value{transition:text-shadow .35s ease, transform .35s ease;display:inline-block;transform-origin:left center}
+.dsi-kpi:hover .dsi-kpi-value{transform:scale(1.04)}
+.dsi-kpi.kp-blue:hover   .dsi-kpi-value{text-shadow:0 0 18px rgba(88,166,255,.45)}
+.dsi-kpi.kp-green:hover  .dsi-kpi-value{text-shadow:0 0 18px rgba(63,185,80,.45)}
+.dsi-kpi.kp-red:hover    .dsi-kpi-value{text-shadow:0 0 18px rgba(248,81,73,.45)}
+.dsi-kpi.kp-yellow:hover .dsi-kpi-value{text-shadow:0 0 18px rgba(227,155,55,.45)}
+.dsi-kpi.kp-violet:hover .dsi-kpi-value{text-shadow:0 0 18px rgba(163,130,255,.50)}
+.dsi-kpi.kp-teal:hover   .dsi-kpi-value{text-shadow:0 0 18px rgba(61,213,152,.45)}
+
+/* Live status dots — gentle breathing pulse so the dashboard feels alive. */
+@keyframes dsiDotPulse{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.18);opacity:.78}
+}
+.dsi-dash-title .dot{animation:dsiDotPulse 1.8s ease-in-out infinite;transition:box-shadow .3s ease}
+.dept-qc    .dsi-dash-title .dot{box-shadow:0 0 8px rgba(61,213,152,.45),  0 0 0 0 rgba(61,213,152,.45)}
+.dept-load  .dsi-dash-title .dot{box-shadow:0 0 8px rgba(227,155,55,.45),  0 0 0 0 rgba(227,155,55,.45)}
+.dept-paint .dsi-dash-title .dot{box-shadow:0 0 8px rgba(88,166,255,.45),  0 0 0 0 rgba(88,166,255,.45)}
+.dept-weld  .dsi-dash-title .dot{box-shadow:0 0 8px rgba(248,81,73,.45),   0 0 0 0 rgba(248,81,73,.45)}
+
+/* "Updated —" badge: soft accent pulse so users see the dashboard is live. */
+@keyframes dsiUpdatedPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(163,130,255,.0)}
+  50%{box-shadow:0 0 0 4px rgba(163,130,255,.10)}
+}
+#dsi-updated{animation:dsiUpdatedPulse 2.4s ease-in-out infinite}
+
+/* Section entry — stagger the chart rows in on first paint. */
+@keyframes dsiRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.dsi-charts-row > .dsi-chart-card{animation:dsiRise .55s ease-out both}
+.dsi-charts-row > .dsi-chart-card:nth-child(2){animation-delay:.08s}
+.dsi-kpi-grid > .dsi-kpi{animation:dsiRise .45s ease-out both}
+.dsi-kpi-grid > .dsi-kpi:nth-child(2){animation-delay:.05s}
+.dsi-kpi-grid > .dsi-kpi:nth-child(3){animation-delay:.10s}
+.dsi-kpi-grid > .dsi-kpi:nth-child(4){animation-delay:.15s}
+.dsi-kpi-grid > .dsi-kpi:nth-child(5){animation-delay:.20s}
+.dsi-kpi-grid > .dsi-kpi:nth-child(6){animation-delay:.25s}
+.dsi-kpi-grid > .dsi-kpi:nth-child(7){animation-delay:.30s}
+
 /* Reduce-motion respect */
 @media (prefers-reduced-motion: reduce){
   *{transition-duration:.01ms !important; animation-duration:.01ms !important; animation-iteration-count:1 !important}

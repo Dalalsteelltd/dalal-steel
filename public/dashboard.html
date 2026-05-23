@@ -207,14 +207,25 @@
   Chart.defaults.color = '#7d8590';
   Chart.defaults.font.family = 'Barlow,Helvetica,sans-serif';
 
+  // Honour OS-level reduced-motion. Falls back to a 1ms duration so transitions
+  // still "happen" (so update() callbacks fire) but feel instant.
+  const REDUCE_MOTION = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const D = m => REDUCE_MOTION ? 1 : m;     // duration shorthand
+  const STAGGER = (base) => REDUCE_MOTION
+    ? 0
+    : (ctx) => ctx.type === 'data' && ctx.mode === 'default' ? ctx.dataIndex * base : 0;
+
   const chLoading = new Chart(ctxLoading, {
     type: 'bar',
     data: { labels: ['Pending','Loaded','Returned','Delivered'],
       datasets: [{ label: 'Batches', data: [0,0,0,0],
         backgroundColor: ['#e39b37','#58a6ff','#f85149','#3fb950'],
-        borderRadius: 6 }] },
+        borderRadius: 6, hoverBackgroundColor: ['#f0ad4f','#79b8ff','#ff6b63','#56cc6a'] }] },
     options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false} },
+      animation: { duration: D(1400), easing: 'easeOutQuart', delay: STAGGER(120) },
+      interaction: { mode: 'index', intersect: false },
+      plugins:{ legend:{display:false},
+                tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1 } },
       scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1 }, grid:{ color:'rgba(255,255,255,.05)' } },
                x:{ grid:{ display:false } } } }
   });
@@ -223,9 +234,11 @@
     data: { labels: ['Not Started','In Progress','Completed','Rework'],
       datasets: [{ data: [0,0,0,0],
         backgroundColor: ['#7d8590','#e39b37','#3fb950','#f85149'],
-        borderWidth: 3, borderColor: '#0d1117', hoverOffset: 6 }] },
+        borderWidth: 3, borderColor: '#0d1117', hoverOffset: 12, hoverBorderColor: '#161b22' }] },
     options: { responsive:true, maintainAspectRatio:false, cutout:'62%',
-      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{ size:11 } } } } }
+      animation: { animateRotate: true, animateScale: true, duration: D(1600), easing: 'easeOutQuart' },
+      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:14, font:{ size:11 } } },
+                tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1 } } }
   });
 
   // Production funnel — horizontal bars top→down: QC stages first (Assembly,
@@ -242,7 +255,10 @@
         backgroundColor: ['#58a6ff','#1f6feb','#79c0ff','#f85149','#a371f7','#d29922','#e39b37','#3fb950'],
         borderRadius: 6 }] },
     options: { indexAxis: 'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false} },
+      animation: { duration: D(1500), easing: 'easeOutQuart', delay: STAGGER(90) },
+      interaction: { mode: 'index', intersect: false },
+      plugins:{ legend:{display:false},
+                tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1 } },
       scales:{ x:{ beginAtZero:true, grid:{ color:'rgba(255,255,255,.05)' } },
                y:{ grid:{ display:false } } } }
   });
@@ -254,18 +270,25 @@
   const chThroughput = new Chart(document.getElementById('chThroughput').getContext('2d'), {
     type: 'line',
     data: { labels: [], datasets: [
-      { label:'QC Assembly', data:[], borderColor:'#7d8590', backgroundColor:'rgba(125,133,144,.15)', tension:.35, fill:false, pointRadius:3 },
-      { label:'QC Fabrication', data:[], borderColor:'#e3b341', backgroundColor:'rgba(227,179,65,.15)', tension:.35, fill:false, pointRadius:3 },
-      { label:'QC CO2 Welding', data:[], borderColor:'#3fb950', backgroundColor:'rgba(63,185,80,.15)', tension:.35, fill:false, pointRadius:3 },
-      { label:'Robotic Welding', data:[], borderColor:'#58a6ff', backgroundColor:'rgba(88,166,255,.15)', tension:.35, fill:false, pointRadius:3 },
-      { label:'Painted', data:[], borderColor:'#a371f7', backgroundColor:'rgba(163,113,247,.15)', tension:.35, fill:false, pointRadius:3 },
-      { label:'Pending Loading', data:[], borderColor:'#56d4dc', backgroundColor:'rgba(86,212,220,.15)', tension:.35, fill:false, pointRadius:3, borderDash:[6,4] },
-      { label:'Loaded', data:[], borderColor:'#e39b37', backgroundColor:'rgba(227,155,55,.15)', tension:.35, fill:false, pointRadius:3 }
+      { label:'QC Assembly', data:[], borderColor:'#7d8590', backgroundColor:'rgba(125,133,144,.15)', tension:.35, fill:false, pointRadius:3, pointHoverRadius:6 },
+      { label:'QC Fabrication', data:[], borderColor:'#e3b341', backgroundColor:'rgba(227,179,65,.15)', tension:.35, fill:false, pointRadius:3, pointHoverRadius:6 },
+      { label:'QC CO2 Welding', data:[], borderColor:'#3fb950', backgroundColor:'rgba(63,185,80,.15)', tension:.35, fill:false, pointRadius:3, pointHoverRadius:6 },
+      { label:'Robotic Welding', data:[], borderColor:'#58a6ff', backgroundColor:'rgba(88,166,255,.15)', tension:.35, fill:false, pointRadius:3, pointHoverRadius:6 },
+      { label:'Painted', data:[], borderColor:'#a371f7', backgroundColor:'rgba(163,113,247,.15)', tension:.35, fill:false, pointRadius:3, pointHoverRadius:6 },
+      { label:'Pending Loading', data:[], borderColor:'#56d4dc', backgroundColor:'rgba(86,212,220,.15)', tension:.35, fill:false, pointRadius:3, pointHoverRadius:6, borderDash:[6,4] },
+      { label:'Loaded', data:[], borderColor:'#e39b37', backgroundColor:'rgba(227,155,55,.15)', tension:.35, fill:false, pointRadius:3, pointHoverRadius:6 }
     ]},
     options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:10, font:{ size:10 } } } },
+      animation: { duration: D(1500), easing: 'easeOutQuart' },
+      // Tension grows from straight (0) to curved (.35) during the initial
+      // draw — the lines visibly "unfurl" into shape rather than appearing flat.
+      animations: { tension: { duration: D(1200), easing: 'easeOutCubic', from: 0, to: 0.35, loop: false } },
+      interaction: { mode: 'index', intersect: false },
+      plugins:{ legend:{ position:'bottom', labels:{ usePointStyle:true, pointStyle:'circle', padding:10, font:{ size:10 } } },
+                tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1 } },
       scales:{ y:{ beginAtZero:true, grid:{ color:'rgba(255,255,255,.05)' } },
-               x:{ grid:{ display:false } } } }
+               x:{ grid:{ display:false } } },
+      elements:{ line:{ borderWidth: 2.2 }, point:{ hoverBorderWidth: 2 } } }
   });
 
   // Quality trend — single line, pass-rate %. spanGaps=false so days with no
@@ -273,14 +296,47 @@
   const chQuality = new Chart(document.getElementById('chQuality').getContext('2d'), {
     type: 'line',
     data: { labels: [], datasets: [
-      { label:'Pass rate %', data:[], borderColor:'#3fb950', backgroundColor:'rgba(63,185,80,.15)', tension:.3, fill:true, pointRadius:4, spanGaps:false }
+      { label:'Pass rate %', data:[], borderColor:'#3fb950', backgroundColor:'rgba(63,185,80,.15)', tension:.3, fill:true, pointRadius:4, pointHoverRadius:8, spanGaps:false }
     ]},
     options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{
+      animation: { duration: D(1500), easing: 'easeOutQuart' },
+      animations: { tension: { duration: D(1200), easing: 'easeOutCubic', from: 0, to: 0.3, loop: false } },
+      interaction: { mode: 'index', intersect: false },
+      plugins:{ legend:{ display:false }, tooltip:{ animation:{ duration: D(200) }, padding: 10, backgroundColor: 'rgba(13,17,23,.92)', borderColor: 'rgba(255,255,255,.12)', borderWidth: 1, callbacks:{
         label: ctx => ctx.parsed.y === null ? 'No inspections' : ctx.parsed.y + '% pass rate' } } },
       scales:{ y:{ beginAtZero:true, max:100, ticks:{ callback: v => v + '%' }, grid:{ color:'rgba(255,255,255,.05)' } },
-               x:{ grid:{ display:false } } } }
+               x:{ grid:{ display:false } } },
+      elements:{ point:{ hoverBorderWidth: 2 } } }
   });
+
+  // Smoothly tween a KPI cell from its previously-rendered value to the new
+  // one. Last value lives on the element's dataset so re-renders pick up where
+  // the prior animation ended. Reduced-motion users get an immediate set.
+  function animateValue(el, target){
+    if (!el) return;
+    const end = Number(target) || 0;
+    const start = Number(el.dataset.val) || 0;
+    if (REDUCE_MOTION || start === end) { el.textContent = end.toLocaleString(); el.dataset.val = end; return; }
+    const t0 = performance.now();
+    const dur = 900;
+    (function tick(t){
+      const p = Math.min(1, (t - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 4);  // easeOutQuart
+      el.textContent = Math.round(start + (end - start) * eased).toLocaleString();
+      if (p < 1) requestAnimationFrame(tick);
+      else el.dataset.val = end;
+    })(t0);
+  }
+
+  // Briefly highlight a chart card when its data refreshes. Forces an
+  // animation restart by toggling the class off, reading layout, then on.
+  function flashCard(canvas){
+    const card = canvas && canvas.closest && canvas.closest('.dsi-chart-card');
+    if (!card) return;
+    card.classList.remove('dsi-flash');
+    void card.offsetWidth;
+    card.classList.add('dsi-flash');
+  }
 
   function statusTag(status){
     return '<span class="dsi-tag ' + DSI.statusClass(status) + '">' + DSI.esc(status || '—') + '</span>';
@@ -407,6 +463,7 @@
     ];
     chFunnel.data.datasets[0].data = stages.map(s => s.value);
     chFunnel.update();
+    flashCard(document.getElementById('chFunnel'));
     // Drop-off labels between adjacent stages — biggest drop = bottleneck.
     const gaps = [];
     for (let i = 1; i < stages.length; i++) {
@@ -431,6 +488,7 @@
     chThroughput.data.datasets[5].data = (throughput.pendingLoading || []).map(p => p.value);
     chThroughput.data.datasets[6].data = (throughput.loaded         || []).map(p => p.value);
     chThroughput.update();
+    flashCard(document.getElementById('chThroughput'));
   }
 
   function renderActiveProjects(projects){
@@ -458,6 +516,7 @@
     chQuality.data.labels = labels;
     chQuality.data.datasets[0].data = quality.map(p => p.passRate);
     chQuality.update();
+    flashCard(document.getElementById('chQuality'));
     const totalInspections = quality.reduce((s, p) => s + p.total, 0);
     const totalPassed = quality.reduce((s, p) => s + p.passed, 0);
     const overall = totalInspections > 0 ? Math.round((totalPassed / totalInspections) * 1000) / 10 : null;
@@ -468,13 +527,13 @@
   }
 
   function setKpis(k){
-    document.getElementById('kpiTotal').textContent = k.totalBeams;
-    document.getElementById('kpiPassed').textContent = k.passedQc;
-    document.getElementById('kpiFailed').textContent = k.failedQc;
-    document.getElementById('kpiWelded').textContent = k.totalWelded || 0;
-    document.getElementById('kpiLoaded').textContent = k.totalLoaded;
-    document.getElementById('kpiDelivered').textContent = k.totalDelivered;
-    document.getElementById('kpiPainted').textContent = k.totalPainted;
+    animateValue(document.getElementById('kpiTotal'),     k.totalBeams);
+    animateValue(document.getElementById('kpiPassed'),    k.passedQc);
+    animateValue(document.getElementById('kpiFailed'),    k.failedQc);
+    animateValue(document.getElementById('kpiWelded'),    k.totalWelded || 0);
+    animateValue(document.getElementById('kpiLoaded'),    k.totalLoaded);
+    animateValue(document.getElementById('kpiDelivered'), k.totalDelivered);
+    animateValue(document.getElementById('kpiPainted'),   k.totalPainted);
     const pct = k.totalBeams ? Math.round((k.passedQc / k.totalBeams) * 100) : 0;
     document.getElementById('kpiPassedPct').textContent = pct + '% pass rate';
     document.getElementById('kpiReworked').textContent = (k.reworkedQc || 0) + ' reworked';
@@ -506,6 +565,7 @@
         data.loadingByStatus.Delivered
       ];
       chLoading.update();
+      flashCard(document.getElementById('chLoading'));
       chPainting.data.datasets[0].data = [
         data.paintingByCoating['Not Started'],
         data.paintingByCoating['In Progress'],
@@ -513,6 +573,7 @@
         data.paintingByCoating['Rework']
       ];
       chPainting.update();
+      flashCard(document.getElementById('chPainting'));
       renderRecentLoading(data.recent.loading);
       renderRecentPainting(data.recent.painting);
       renderRecentWelding(data.recent.welding || []);
