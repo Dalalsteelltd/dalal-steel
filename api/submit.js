@@ -15,6 +15,7 @@ SBN022: "SBN022",
 ST300: "ST300",
 SBN013: "SBN013",
 SPN023: "SPN023",
+SPN057: "SPN057",
 };
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
